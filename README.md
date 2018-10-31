@@ -1,5 +1,9 @@
 # bioinfo_project_18
-Bioinformatic project course 2018
+Bioinformatic project course 2018.
+# scrna-cell-cycle
 
-Students in this project: Erik Hedman, Lovisa Lundberg, Hugo Swenson.
+Client: Johan Reimegård
+Supervisor: Lisa Klasson
+Students: Erik Hedman, Lovisa Lundberg, Hugo Swenson.
+
 
