@@ -1,5 +1,5 @@
 ---
-title: "Untitled"
+title: "Cell cycle prediction"
 output: html_document
 ---
 
@@ -7,22 +7,422 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+Load some packages
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r load, warning=FALSE}
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+suppressPackageStartupMessages(library(SummarizedExperiment))
+suppressPackageStartupMessages(library(MultiAssayExperiment))
 
-```{r cars}
-summary(cars)
+suppressPackageStartupMessages(library(plotrix))
+suppressPackageStartupMessages(library(Seurat))
+suppressPackageStartupMessages(library(scran))
+suppressPackageStartupMessages(library(gridExtra))
+
 ```
 
-## Including Plots
+## Load Buettner data
 
-You can also embed plots, for example:
+From the Conquer database (http://imlspenticton.uzh.ch:3838/conquer/) the Buettner dataset was fetched:
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+1	EMTAB2805 (PMID 25599176)	Buettner2015	Mus musculus	mESC in different cell cycle stages	288	SMARTer C1	full-length
+
+```{r data}
+cc.data <- readRDS("embryonic_data/EMTAB2805.rds")
+
+# get tpms at gene level
+exprs <- assays(experiments(cc.data)[["gene"]])[["TPM"]]
+# remove the .1 etc from the ensembl gene name
+gname <- rownames(exprs)
+ensname <- gsub("\\.\\d+","",gname)
+rownames(exprs) <- ensname
+
+# remove spike-ins from expression table
+ercc <- grep("ERCC",rownames(exprs))
+exprs <- exprs[-ercc,]
+
+# metadata with cell cycle stage assignment
+M <- as.data.frame(colData(cc.data))
+head(M)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Filter out clearly low quality cells
+
+Clearly some outlier cells on negative PC1 with low number of genes with pca using full dataset.
+
+Mainly S-phase cells, even if most S-phase cells have a high median expression.
+
+```{r filter}
+# filter out cells with low nDet
+nDet <- colSums(exprs>1)
+hist(nDet,n=100)
+# make a cutoff at 4000 genes, removes 16 cells
+keep <- which(nDet>4000)
+
+exprs<-exprs[,keep]
+M <- M[keep,]
+
+```
+
+
+
+# Run cyclone
+
+
+```{r cyclone, warning=F}
+mmu.pairs <- readRDS(system.file("exdata", "mouse_cycle_markers.rds", package="scran"))
+
+set.seed(123)
+sce <- SingleCellExperiment(assays=list(counts = exprs, logcounts = log2(exprs+1)))
+cc <- cyclone(sce, pairs=mmu.pairs)
+
+table(cc$phase)
+table(M$cell_cycle_stage)
+
+
+# plot overlap matrix:
+source("/Users/asbj/local/projects/Petropoulos/analysis/bin/Rscripts/functions.R")
+nS <- length(cc$phase)
+o <- overlap_phyper2(split(1:nS,cc$phase),split(1:nS,M$cell_cycle_stage),plot=T)
+```
+
+Rows are the cyclone predictions, columns are the assigned phase from sorting.  
+
+Predictions have slightly more G1 compared to their assignment, and not all cells are consistent.
+
+## Plot onto PCA
+
+```{r}
+PC <- prcomp(t(log2(exprs+1)))
+set.seed(123)
+
+plot(data.frame(PC$x[,1:5]),col=as.factor(M$cell_cycle_stage),pch=16,main="Annotated phase")
+plot(data.frame(PC$x[,1:5]),col=as.factor(cc$phase),pch=16,main="Cyclone prediction")
+
+
+# also check if some PC is clearly driven by detected genes
+nDet <- colSums(exprs>1)
+colDet <- color.scale(nDet, c(0,1,1),c(1,1,0),0)
+plot(data.frame(PC$x[,1:5]),col=colDet,pch=16)
+
+
+```
+
+
+PC1 is mainly due to gene detection, PC3 & 4 semms to separate the 3 phases best. 
+
+# Cell cycle scoring in Seurat
+
+Seurat only provides a list of cell cycle genes for human data (from Tirosh et al paper). First need to convert the human gene names to mouse orthologs and their ensembl gene ids.
+
+```{r convert_names}
+savefile = "seurat_cc_genes_mouse.Rdata"
+if (file.exists(savefile)){
+  load(savefile)
+}else{
+
+# Load human ensembl attributes
+human = biomaRt::useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+# Load mouse ensembl attributes
+mouse = biomaRt::useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+
+hsa2mmEnsembl <- function(x,mouse,human){
+  # Link both datasets and retrieve mouse genes from the human genes
+  genes.list = biomaRt::getLDS(attributes = c("hgnc_symbol"), filters = "hgnc_symbol", values = x , mart = human, attributesL = c("mgi_symbol","ensembl_gene_id"), martL = mouse, uniqueRows = T)
+  # Get unique names of genes 
+  mouse.gene.list <- unique(genes.list[, 3])
+  return(mouse.gene.list)
+}
+
+# load data from Seurat package
+data(cc.genes)
+# convert to mouse ensembl IDs
+cc.genes.mouse <- lapply(cc.genes, hsa2mmEnsembl, mouse,human)
+save(cc.genes.mouse, file=savefile)
+}
+
+```
+
+Run Seurat CellCycleScoring function
+
+```{r seurat}
+# add cyclone prediction to metadata
+M$cyclone <- cc$phases
+
+# create a seurat object
+sdata <- CreateSeuratObject(raw.data = exprs, min.cells = 3, min.genes = 200,
+    project = "CC",is.expr=1,meta.data=M)
+
+sdata <- NormalizeData(sdata)
+sdata <- ScaleData(sdata)
+sdata <- FindVariableGenes(object = sdata, mean.function = ExpMean, 
+                           dispersion.function = LogVMR, x.low.cutoff = 0.2, 
+                           x.high.cutoff = 10, y.cutoff = 0.5)
+
+# run PCA
+sdata <- RunPCA(object = sdata, pc.genes = sdata@var.genes, do.print = FALSE)  
+# predict cell cycle
+sdata <- CellCycleScoring(sdata, g2m.genes = cc.genes.mouse$g2m.genes, 
+                          s.genes = cc.genes.mouse$s.genes)
+
+table(sdata@meta.data$Phase)
+
+```
+
+More G2M predictions with Seurat, less S-phase, similar for G1. 
+
+```{r}
+p1 <- PCAPlot(sdata, group.by = "cell_cycle_stage", plot.title="Annotation", do.return=T)
+p2 <- PCAPlot(sdata, group.by = "Phase", plot.title="Seurat prediction", do.return=T)
+p3 <- PCAPlot(sdata, group.by = "cyclone", plot.title="Cyclone prediction", do.return=T)
+
+plot_grid(p1,p2,p3)
+```
+
+Clearly cyclone has better overlap with the annotation. But that data is used to train Seurat. 
+
+
+Look at consistency in predictions per cell. 
+
+```{r}
+
+o <- overlap_phyper2(split(1:nS,cc$phase),split(1:nS,sdata@meta.data$Phase),plot=T)
+
+# plot on pca
+all <- as.matrix(sdata@meta.data[,c("Phase","cyclone")])
+assigned <- apply(all,1,paste, collapse=":")
+table(assigned)
+
+sdata@meta.data$assigned <- assigned
+PCAPlot(sdata, group.by = "assigned", plot.title="Combined")
+
+
+
+```
+
+Legend for PCA has Seurat prediction:Cyclone prediction. 
+
+
+Clearly the S-phase assignment is the most inconsistent. Cells in S-phase with one method end up as G1 with the other. Also many S from cyclone are predicted as G2M with seurat. 
+
+# PCA based on CC-genes
+
+Take the gene sets from both cyclone and seurat and run pca with only those. See how the predictions look on that PCA.
+
+```{r pca_cc}
+cyclone.genes <- unique(unlist(lapply(mmu.pairs, unlist)))
+length(cyclone.genes)
+seurat.genes <- unlist(cc.genes.mouse)
+length(seurat.genes)
+
+# quite a few genes unique to seurat list
+setdiff(seurat.genes,cyclone.genes)
+
+genes.cc <- unique(c(cyclone.genes,seurat.genes))
+length(genes.cc)
+
+sdata.cc <- RunPCA(object = sdata, pc.genes = genes.cc, do.print = FALSE)
+
+p1 <- PCAPlot(sdata.cc, group.by = "cell_cycle_stage", plot.title="Annotation",do.return=T)
+p2 <- PCAPlot(sdata.cc, group.by = "Phase", plot.title="Seurat prediction", do.return=T)
+p3 <- PCAPlot(sdata.cc, group.by = "cyclone", plot.title="Cyclone prediction", do.return=T)
+
+plot_grid(p1,p2,p3)
+
+```
+
+Better separation of the G2M cells with this pca, but more mixing of G1/S cells. 
+
+Also look at number of genes for the different groups. 
+
+```{r}
+p1 <- VlnPlot(sdata, features.plot = ("nGene"), group.by = "cell_cycle_stage", do.return =T)
+p2 <- VlnPlot(sdata, features.plot = ("nGene"), group.by = "Phase", do.return=T)
+p3 <- VlnPlot(sdata, features.plot = ("nGene"), group.by = "cyclone", do.return = T)
+
+plot_grid(p1,p2,p3)
+```
+
+With the seurat predictions, less clear shift to low nDET for G1 cells. 
+
+# Test on other datasets
+
+From conquer fetched datasets:
+
+5	GSE44183-GPL11154 (PMID 23892778)	Xue2013	Homo sapiens	embryonal development from oocyte to morula	29	Tang2010	full-length
+
+6	GSE44183-GPL13112 (PMID 23892778)	Xue2013	Mus musculus	embryonal development from oocyte to morula	17	Tang2010	full-length	 
+
+8 GSE45719 (PMID 24408435)	Deng2014	Mus musculus	development from zygote to blastocyst + adult liver	291	SMART-Seq	full-length
+
+21	GSE63818-GPL16791 (PMID 26046443)	Guo2015	Homo sapiens	primordial germ cells from embryos at different times of gestation	328	Tang	full-length
+
+24	GSE66507 (PMID 26293300)	Blakeley2015	Homo sapiens	preimplantation embryos	30	SMARTer	full-length
+
+2 EMTAB3929 (PMID 27062923)	Petropoulos2016	Homo sapiens	preimplantation embryos from embryonic day 3 to 7	1529	Smart-Seq2	full-length
+
+For each of these define some settings:
+
+```{r}
+datasets <- list()
+datasets$XueHsa <- list(name = "GSE44183-GPL11154.rds", annot = "characteristics_ch1", species = "human")
+datasets$XueMmu <- list(name = "GSE44183-GPL13112.rds", annot = "characteristics_ch1", species = "mouse")
+datasets$GuoHsa <- list(name = "GSE63818-GPL16791.rds", annot = c("characteristics_ch1","source_name_ch1"), species = "human")
+datasets$DengMmu <- list(name = "GSE45719.rds", annot = "source_name_ch1", species = "mouse")
+datasets$BlakeleyHsa <- list(name = "GSE66507.rds", annot = "characteristics_ch1.1", species = "human")
+datasets$PetropoulosHsa <- list(name = "EMTAB3929.rds", annot = "Characteristics.developmental.stage.", species = "human")
+datasets$BuettnerMmu <- list(name = "EMTAB2805.rds", annot = "cell_cycle_stage", species = "mouse")
+
+```
+
+Translate seurat cc-genes to ensembl ids.
+
+```{r}
+savefile = "seurat_cc_genes_human.Rdata"
+if (file.exists(savefile)){
+  load(savefile)
+}else{
+  human = biomaRt::useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+  hsa2Ensembl <- function(x,human){
+    genes.list = biomaRt::getBM(attributes = c("hgnc_symbol","ensembl_gene_id"), filters = "hgnc_symbol", values = x , mart = human, uniqueRows = T)
+    # Get unique names of genes 
+    ens.gene.list <- unique(genes.list[, 2])
+    return(ens.gene.list)
+  }
+  # load data from Seurat package
+  data(cc.genes)
+  # convert to ensembl IDs
+  cc.genes.human <- lapply(cc.genes, hsa2Ensembl, human)
+  save(cc.genes.human, file=savefile)
+}
+
+```
+
+Define a function for running all analysis on one dataset at a time.
+
+```{r}
+mmu.pairs <- readRDS(system.file("exdata", "mouse_cycle_markers.rds", package="scran"))
+hsa.pairs <- readRDS(system.file("exdata", "human_cycle_markers.rds", package="scran"))
+
+
+cc.analysis <- function(ds){
+  print(ds)
+  savefile <- paste("embryonic_data/processed/", ds, "_seurat_data.Rdata", sep="")
+  if (!file.exists(savefile)){
+  # load data
+  file <- paste("embryonic_data/", datasets[[ds]]$name, sep='')
+  cc.data <- readRDS(file)
+
+  # get tpms at gene level
+  exprs <- assays(experiments(cc.data)[["gene"]])[["TPM"]]
+  # remove the .1 etc from the ensembl gene name
+  gname <- rownames(exprs)
+  ensname <- gsub("\\.\\d+", "", gname)
+  rownames(exprs) <- ensname
+
+  # remove spike-ins from expression table
+  ercc <- grep("ERCC", rownames(exprs))
+  exprs <- exprs[-ercc,]
+
+  # metadata with cell cycle stage assignment
+  M <- as.data.frame(colData(cc.data))
+  head(M)  
+
+  # run cyclone  
+  set.seed(123)
+  pairs <- hsa.pairs
+  if (datasets[[ds]]$species == "mouse") { pairs <- mmu.pairs }
+  sce <- SingleCellExperiment(assays=list(counts = exprs, logcounts = log2(exprs+1)))
+  cc <- cyclone(sce, pairs=pairs)
+
+  
+  # create seurat object
+  M$cyclone <- cc$phases
+  sdata <- CreateSeuratObject(raw.data = exprs, min.cells = 3, min.genes = 200,
+    project = "CC", is.expr=1, meta.data=M )
+  sdata <- NormalizeData(sdata, display.progress = F)
+  sdata <- ScaleData(sdata, display.progress = F)
+  sdata <- FindVariableGenes(object = sdata, mean.function = ExpMean, 
+                           dispersion.function = LogVMR, x.low.cutoff = 0.2, 
+                           x.high.cutoff = 10, y.cutoff = 0.5, do.plot = F,
+                           display.progress = F)
+  pc.compute <- 20
+  if (ncol(exprs) < 20){ pc.compute <- ncol(exprs)-1 }
+  sdata <- RunPCA(object = sdata, pc.genes = sdata@var.genes, 
+                  do.print = FALSE, pcs.compute = pc.compute)  
+  genes.use <- cc.genes.human
+  if (datasets[[ds]]$species == "mouse") { genes.use <- cc.genes.mouse }
+  sdata <- CellCycleScoring(sdata, g2m.genes = genes.use$g2m.genes, 
+                          s.genes = genes.use$s.genes)
+  save(sdata, file=savefile)
+  }else{
+    load(savefile)
+  }
+  print("cyclone:")
+  print(table(sdata@meta.data$cyclone))
+  print("Seurat:")
+  print(table(sdata@meta.data$Phase))
+  
+  # plot onto pca
+  annot <- datasets[[ds]]$annot
+  p1 <- PCAPlot(sdata, group.by = "Phase", plot.title="Seurat prediction", do.return=T)
+  p2 <- PCAPlot(sdata, group.by = "cyclone", plot.title="Cyclone prediction", do.return=T)
+  p3 <- PCAPlot(sdata, group.by = annot[1], plot.title="Annotation", do.return=T) +
+     theme(legend.text=element_text(size=4))
+  if (length(annot) == 2){
+    p4 <- PCAPlot(sdata, group.by = annot[2], plot.title="Annotation", do.return=T) +
+     theme(legend.text=element_text(size=4))
+    pl <- plot_grid(p1,p2,p3,p4)
+  }else {
+    pl <- plot_grid(p1,p2,p3)
+  }
+  print(pl)
+}
+
+```
+
+
+Run for each of the datasets
+
+```{r run_all}
+for (ds in names(datasets)){
+  cc.analysis(ds)
+}
+```
+
+* XueHsa - More S-phase with Seurat, Only G1 in the later stages (4-cell to morula). Cyclone precits mainly G1, some G2M for later stages. 
+* XueMmu - Seurat - G1 & G2M (G1 at later stages), Cyclone S + G2M (Mainly S at middle stages)
+* GuoHsa - Seurat - mainly G1, Cyclone - mainly S. Somatic cells mainly G1 with Seurat, mainly S with cyclone. P germ cells - more S at later stages with Seurat, mixed with cyclone. 
+* DengMmu - Seurat - mainly G1, Cyclone mainly S. Seurat - all early stages G2M, 8-16 mainly G1, blastocyst mixed. Cyclone - early stages mixed G2M/S, 8-16 S+G1, blastocyst mixed. 
+* BlakeleyHsa - Seurat mixed, Cyclon mainly G1. TE mainly G1 with cycone, S+G2M with seurat. 
+* PetropoulosHsa - mainly G1 with both, but more G2M/S with Seurat. Earlier stages  G2M with seurat. Negative PC2 mainly S/G2M with cyclone, Positive PC2 mainly S/G2M with seurat. Clearly opposite pattern. 
+
+### Check cell paper data
+
+Since the CP data is a clear example where cyclone and seurat disagrees. Check some marker genes. 
+
+```{r}
+ds <- "PetropoulosHsa"
+savefile <- paste("embryonic_data/processed/", ds, "_seurat_data.Rdata", sep="")
+load(savefile)
+
+# AURKA:ENSG00000087586, PLK1:ENSG00000166851 - G2 marker
+# KIF18B:ENSG00000186185, AURKB:ENSG00000178999 S+G2M
+# CCND3;ENSG00000112576, CCNE2:ENSG00000175305  - G1-S
+
+FeaturePlot(sdata, features.plot = c("ENSG00000087586","ENSG00000166851", "ENSG00000186185","ENSG00000178999", "ENSG00000112576", "ENSG00000175305"), reduction.use = "pca")
+     
+# PGF:ENSG00000119630, SERPINB9:ENSG00000170542 - mural TE marker
+# VCAN:ENSG00000038427, IL6R:ENSG00000160712 - ICM markers                                    
+FeaturePlot(sdata, features.plot = c( "nGene","ENSG00000119630", "ENSG00000170542", "ENSG00000038427", "ENSG00000160712"), reduction.use = "pca")
+
+
+
+```
+
+Looks like the cells in upper part have more of the G2M/S markers - perhaps seurat is correct in assignment? Should be short/no G1 at the early stages until differentiation begins, while at specification of lineages the G1 phase becomes longer.  Not sure at what embryonic stage in human this shift occurs. 
+
+#### session info
+```{r session}
+sessionInfo()
+```
