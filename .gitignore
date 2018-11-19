@@ -2,5 +2,5 @@
 .Rhistory
 .RData
 .Ruserdata
-.embryonic_data
+.embryonic_data/
 .r_scripts/seurat_cc_genes_mouse.Rdata
