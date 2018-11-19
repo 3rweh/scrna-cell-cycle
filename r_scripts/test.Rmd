@@ -28,7 +28,7 @@ From the Conquer database (http://imlspenticton.uzh.ch:3838/conquer/) the Buettn
 1	EMTAB2805 (PMID 25599176)	Buettner2015	Mus musculus	mESC in different cell cycle stages	288	SMARTer C1	full-length
 
 ```{r data}
-cc.data <- readRDS("embryonic_data/EMTAB2805.rds")
+cc.data <- readRDS("/Users/erikh/Desktop/git/scrna-cell-cycle/embryonic_data/EMTAB2805.rds")
 
 # get tpms at gene level
 exprs <- assays(experiments(cc.data)[["gene"]])[["TPM"]]
@@ -81,7 +81,7 @@ table(M$cell_cycle_stage)
 
 
 # plot overlap matrix:
-source("/Users/asbj/local/projects/Petropoulos/analysis/bin/Rscripts/functions.R")
+source("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/cyclone_functions.R")
 nS <- length(cc$phase)
 o <- overlap_phyper2(split(1:nS,cc$phase),split(1:nS,M$cell_cycle_stage),plot=T)
 ```
