@@ -2,4 +2,4 @@
 .Rhistory
 .RData
 .Ruserdata
-.r_scripts/seurat_cc_genes_mouse.Rdata
+r_scripts/*.Rdata
