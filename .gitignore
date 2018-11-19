@@ -3,3 +3,4 @@
 .RData
 .Ruserdata
 r_scripts/*.Rdata
+embryonic_data/*
