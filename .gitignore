@@ -2,5 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
-r_scripts/*.Rdata
+r_scripts/erik/*.Rdata
+r_scripts/lovisa/*.Rdata
+r_scripts/hugo/*.Rdata
 embryonic_data/*
