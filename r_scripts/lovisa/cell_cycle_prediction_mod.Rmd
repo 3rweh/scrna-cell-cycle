@@ -1,0 +1,294 @@
+---
+title: "cell_cycle_prediction_mod"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load some packages
+
+```{r load, warning=FALSE}
+
+suppressPackageStartupMessages(library(SummarizedExperiment))
+suppressPackageStartupMessages(library(MultiAssayExperiment))
+
+suppressPackageStartupMessages(library(plotrix))
+suppressPackageStartupMessages(library(Seurat))
+suppressPackageStartupMessages(library(scran))
+suppressPackageStartupMessages(library(gridExtra))
+
+```
+
+## Load Buettner data
+
+From the Conquer database (http://imlspenticton.uzh.ch:3838/conquer/) the Buettner dataset was fetched:
+
+1	EMTAB2805 (PMID 25599176)	Buettner2015	Mus musculus	mESC in different cell cycle stages	288	SMARTer C1	full-length
+
+```{r data}
+cc.data <- readRDS("embryonic_data/EMTAB2805.rds")
+
+# get tpms at gene level
+exprs <- assays(experiments(cc.data)[["gene"]])[["TPM"]]
+# remove the .1 etc from the ensembl gene name
+gname <- rownames(exprs)
+ensname <- gsub("\\.\\d+","",gname)
+rownames(exprs) <- ensname
+
+# remove spike-ins from expression table
+ercc <- grep("ERCC",rownames(exprs))
+exprs <- exprs[-ercc,]
+
+# metadata with cell cycle stage assignment
+M <- as.data.frame(colData(cc.data))
+head(M)
+```
+
+## Filter out clearly low quality cells
+
+Clearly some outlier cells on negative PC1 with low number of genes with pca using full dataset.
+
+Mainly S-phase cells, even if most S-phase cells have a high median expression.
+
+```{r filter}
+# filter out cells with low nDet
+nDet <- colSums(exprs>1)
+hist(nDet,n=100)
+# make a cutoff at 4000 genes, removes 16 cells
+keep <- which(nDet>4000)
+
+exprs<-exprs[,keep]
+M <- M[keep,]
+
+```
+
+
+
+# Run cyclone
+
+
+```{r cyclone, warning=F}
+mmu.pairs <- readRDS(system.file("exdata", "mouse_cycle_markers.rds", package="scran"))
+
+set.seed(123)
+sce <- SingleCellExperiment(assays=list(counts = exprs, logcounts = log2(exprs+1)))
+cc <- cyclone(sce, pairs=mmu.pairs)
+
+table(cc$phase)
+test <- table(M$cell_cycle_stage)
+
+library(stringr)
+str_replace_all(M$cell_cycle_stage, "[\r\n]" , "")
+
+test1 <- table(test)
+
+
+# removes header
+cat(test1, file = "actual.txt")
+
+write(test1, file = "actual.txt",
+      ncolumns = if(is.character(test1)) 1 else 5,
+      append = FALSE, sep = " ")
+
+# adds newline in the beginning
+sink('actual.txt')
+print(test,right=F)
+sink()
+
+
+# creating table file for cyclone predition
+write(table(cc$phase), file = "predicted_cyclone.txt",
+      ncolumns = if(is.character(table(cc$phase))) 1 else 5,
+      append = FALSE, sep = " ")
+
+# creating table file for the annotation data
+write(table(M$cell_cycle_stage), file = "actual.txt",
+      ncolumns = if(is.character(table(M$cell_cycle_stage))) 1 else 5,
+      append = FALSE, sep = " ")
+
+
+
+# plot overlap matrix:
+source("scripts/scrnaseq.R")
+nS <- length(cc$phase)
+o <- overlap_phyper2(split(1:nS,cc$phase),split(1:nS,M$cell_cycle_stage),plot=T)
+```
+
+Rows are the cyclone predictions, columns are the assigned phase from sorting.  
+
+Predictions have slightly more G1 compared to their assignment, and not all cells are consistent.
+
+## Plot onto PCA
+
+```{r}
+PC <- prcomp(t(log2(exprs+1)))
+set.seed(123)
+
+plot(data.frame(PC$x[,1:5]),col=as.factor(M$cell_cycle_stage),pch=16,main="Annotated phase")
+plot(data.frame(PC$x[,1:5]),col=as.factor(cc$phase),pch=16,main="Cyclone prediction")
+
+
+# also check if some PC is clearly driven by detected genes
+nDet <- colSums(exprs>1)
+colDet <- color.scale(nDet, c(0,1,1),c(1,1,0),0)
+plot(data.frame(PC$x[,1:5]),col=colDet,pch=16)
+
+
+```
+
+PC1 is mainly due to gene detection, PC3 & 4 semms to separate the 3 phases best. 
+
+# Cell cycle scoring in Seurat
+
+Seurat only provides a list of cell cycle genes for human data (from Tirosh et al paper). First need to convert the human gene names to mouse orthologs and their ensembl gene ids.
+
+```{r convert_names}
+savefile = "seurat_cc_genes_mouse.Rdata"
+if (file.exists(savefile)){
+  load(savefile)
+}else{
+
+# Load human ensembl attributes
+human = biomaRt::useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+# Load mouse ensembl attributes
+mouse = biomaRt::useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+
+hsa2mmEnsembl <- function(x,mouse,human){
+  # Link both datasets and retrieve mouse genes from the human genes
+  genes.list = biomaRt::getLDS(attributes = c("hgnc_symbol"), filters = "hgnc_symbol", values = x , mart = human, attributesL = c("mgi_symbol","ensembl_gene_id"), martL = mouse, uniqueRows = T)
+  # Get unique names of genes 
+  mouse.gene.list <- unique(genes.list[, 3])
+  return(mouse.gene.list)
+}
+
+# load data from Seurat package
+data(cc.genes)
+# convert to mouse ensembl IDs
+cc.genes.mouse <- lapply(cc.genes, hsa2mmEnsembl, mouse,human)
+save(cc.genes.mouse, file=savefile)
+}
+
+```
+
+Run Seurat CellCycleScoring function
+
+```{r seurat}
+# add cyclone prediction to metadata
+M$cyclone <- cc$phases
+
+# create a seurat object
+sdata <- CreateSeuratObject(raw.data = exprs, min.cells = 3, min.genes = 200,
+    project = "CC",is.expr=1,meta.data=M)
+
+sdata <- NormalizeData(sdata)
+sdata <- ScaleData(sdata)
+sdata <- FindVariableGenes(object = sdata, mean.function = ExpMean, 
+                           dispersion.function = LogVMR, x.low.cutoff = 0.2, 
+                           x.high.cutoff = 10, y.cutoff = 0.5)
+
+# run PCA
+sdata <- RunPCA(object = sdata, pc.genes = sdata@var.genes, do.print = FALSE)  
+# predict cell cycle
+sdata <- CellCycleScoring(sdata, g2m.genes = cc.genes.mouse$g2m.genes, 
+                          s.genes = cc.genes.mouse$s.genes)
+
+table(sdata@meta.data$Phase)
+
+# saving file for seurat prediction
+write(table(sdata@meta.data$Phase), file = "predicted_seurat.txt",
+      ncolumns = if(is.character(table(sdata@meta.data$Phase))) 1 else 5,
+      append = FALSE, sep = " ")
+
+```
+
+More G2M predictions with Seurat, less S-phase, similar for G1. 
+
+```{r}
+p1 <- PCAPlot(sdata, group.by = "cell_cycle_stage", plot.title="Annotation", do.return=T)
+p2 <- PCAPlot(sdata, group.by = "Phase", plot.title="Seurat prediction", do.return=T)
+p3 <- PCAPlot(sdata, group.by = "cyclone", plot.title="Cyclone prediction", do.return=T)
+
+plot_grid(p1,p2,p3)
+```
+
+Clearly cyclone has better overlap with the annotation. But that data is used to train Seurat. 
+
+
+Look at consistency in predictions per cell. 
+
+```{r}
+
+o <- overlap_phyper2(split(1:nS,cc$phase),split(1:nS,sdata@meta.data$Phase),plot=T)
+
+# plot on pca
+all <- as.matrix(sdata@meta.data[,c("Phase","cyclone")])
+assigned <- apply(all,1,paste, collapse=":")
+table(assigned)
+
+sdata@meta.data$assigned <- assigned
+PCAPlot(sdata, group.by = "assigned", plot.title="Combined")
+
+
+
+```
+
+Legend for PCA has Seurat prediction:Cyclone prediction. 
+
+
+Clearly the S-phase assignment is the most inconsistent. Cells in S-phase with one method end up as G1 with the other. Also many S from cyclone are predicted as G2M with seurat. 
+
+# PCA based on CC-genes
+
+Take the gene sets from both cyclone and seurat and run pca with only those. See how the predictions look on that PCA.
+
+```{r pca_cc}
+
+cyclone.genes <- unique(unlist(lapply(mmu.pairs, unlist)))
+
+capture.output(summary(lapply(mmu.pairs, unlist)), file = "test.txt")
+
+fileConn<-file("cyclone.txt")
+writeLines(c(cyclone.genes), fileConn)
+close(fileConn)
+
+
+length(cyclone.genes)
+seurat.genes <- unlist(cc.genes.mouse)
+length(seurat.genes)
+
+# quite a few genes unique to seurat list
+setdiff(seurat.genes,cyclone.genes)
+
+genes.cc <- unique(c(cyclone.genes,seurat.genes))
+length(genes.cc)
+
+sdata.cc <- RunPCA(object = sdata, pc.genes = genes.cc, do.print = FALSE)
+
+p1 <- PCAPlot(sdata.cc, group.by = "cell_cycle_stage", plot.title="Annotation",do.return=T)
+p2 <- PCAPlot(sdata.cc, group.by = "Phase", plot.title="Seurat prediction", do.return=T)
+p3 <- PCAPlot(sdata.cc, group.by = "cyclone", plot.title="Cyclone prediction", do.return=T)
+
+plot_grid(p1,p2,p3)
+
+```
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

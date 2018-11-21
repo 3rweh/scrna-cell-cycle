@@ -1,0 +1,39 @@
+---
+title: "rmse"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## RMSE
+
+Script for calculating RMSE for cyclone and seurat compared to the annotation data. This script requries that you first run "Cell_cycle_prediction.Rmd" modified to save the needed files. 
+
+```{r data}
+# read files as tables, actual is the annotated data
+actual <- read.table("actual.txt", header = FALSE, sep = "", dec = ".")
+predicted_cyclone <- read.table("predicted_cyclone.txt", header = FALSE, sep = "", dec = ".")
+predicted_seurat <- read.table("predicted_seurat.txt", header = FALSE, sep = "", dec = ".")
+
+# saving the data from the files as vectors
+actual <- as.vector(unlist(lapply(c(actual), as.numeric)))
+predicted_cyclone <- as.vector(unlist(lapply(c(predicted_cyclone), as.numeric)))
+predicted_seurat <- as.vector(unlist(lapply(c(predicted_seurat), as.numeric)))
+
+```
+
+## Calculating RMSE
+
+```{r rmse}
+# function for RMSE
+RMSE = function(m, o){
+  sqrt(mean((m - o)^2))
+}
+
+# calculating RMSE for cyclone and seurat
+RMSE_cyc <- RMSE(predicted_cyclone,actual)
+RMSE_seu <- RMSE(predicted_surat,actual)
+```
+
