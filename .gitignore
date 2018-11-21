@@ -5,4 +5,5 @@
 r_scripts/erik/*.Rdata
 r_scripts/lovisa/*.Rdata
 r_scripts/hugo/*.Rdata
+r_scripts/lovisa/embryonic_data/*
 embryonic_data/*
