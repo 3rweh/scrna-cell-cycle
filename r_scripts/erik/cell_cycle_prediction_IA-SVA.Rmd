@@ -1,0 +1,81 @@
+---
+title: "Detecting cell-cycle stage difference in glioblastoma cells"
+author: "Donghyung Lee, modified by Erik Hedman"
+date: "22 november 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Install packages
+
+```{r}
+#devtools
+suppressPackageStartupMessages(library(devtools))
+#iasva
+devtools::install_github("UcarLab/iasva")
+#iasvaExamples  
+devtools::install_github("dleelab/iasvaExamples")
+
+```
+
+Load some packages
+
+```{r load, warning=FALSE}
+rm(list=ls())
+suppressPackageStartupMessages(library(irlba)) # partial SVD, the augmented implicitly restarted Lanczos bidiagonalization algorithm
+suppressPackageStartupMessages(library(iasva))
+suppressPackageStartupMessages(library(iasvaExamples))
+suppressPackageStartupMessages(library(sva))
+suppressPackageStartupMessages(library(SCnorm)) #Warning: package 'SCnorm' was built under R version 3.5.1
+suppressPackageStartupMessages(library(scran))
+suppressPackageStartupMessages(library(scater))#Warning: package 'scater' was built under R version 3.5.1
+suppressPackageStartupMessages(library(Rtsne))
+suppressPackageStartupMessages(library(pheatmap))
+suppressPackageStartupMessages(library(corrplot))
+suppressPackageStartupMessages(library(DescTools)) #pcc i.e., Pearson's contingency coefficient
+suppressPackageStartupMessages(library(RColorBrewer))
+suppressPackageStartupMessages(library(SummarizedExperiment))
+suppressPackageStartupMessages(library(vioplot))
+color.vec <- brewer.pal(3, "Set1")
+
+# Normalization.
+normalize <- function(counts) 
+{
+    normfactor <- colSums(counts)
+    return(t(t(counts)/normfactor)*median(normfactor))
+}
+
+```
+
+Load the glioblastoma single cell RNA-Seq data.
+
+```{r data}
+data("Patel_Glioblastoma_scRNAseq_Read_Counts")
+data("Patel_Glioblastoma_scRNAseq_Annotations")
+data("Patel_Glioblastoma_scRNAseq_ENSG_ID")
+ls()
+
+```
+
+
+
+``` {r}
+counts <- Patel_Glioblastoma_scRNAseq_Read_Counts
+anns <- Patel_Glioblastoma_scRNAseq_Annotations
+ENSG.ID <- Patel_Glioblastoma_scRNAseq_ENSG_ID
+dim(anns)
+
+dim(counts)
+
+length(ENSG.ID)
+
+summary(anns)
+
+table(anns$patient_id, anns$subtype)
+
+ContCoef(table(anns$patient_id, anns$subtype))
+
+```
