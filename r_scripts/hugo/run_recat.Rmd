@@ -1,0 +1,102 @@
+---
+title: "reCAT_run"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Load some packages
+
+```{r load, warning=FALSE}
+suppressPackageStartupMessages(library(SummarizedExperiment))
+suppressPackageStartupMessages(library(MultiAssayExperiment))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(doParallel))
+suppressPackageStartupMessages(library(mclust))
+suppressPackageStartupMessages(library(cluster))
+suppressPackageStartupMessages(library(TSP))
+```
+
+Load the data 
+
+```{r data}
+# load("reCAT_master/data/ola_mES_2i.RData")
+cc.data <- readRDS("embryonic_data/EMTAB2805.rds")
+
+# get tpms at gene level
+exprs <- assays(experiments(cc.data)[["gene"]])[["TPM"]]
+
+# remove spike-ins from expression table
+ercc <- grep("ERCC",rownames(exprs))
+exprs <- exprs[-ercc,]
+
+# metadata with cell cycle stage assignment
+M <- as.data.frame(colData(cc.data))
+head(M)
+```
+
+```{r preprocess}
+source("reCAT_master/R/get_test_exp.R")
+test_exp <- get_test_exp(test_exp)
+exprs <- assays(experiments(cc.data)[["gene"]])[["TPM"]]
+
+# filter out cells with low nDet
+# Colsums = Form row and column sums and means for numeric arrays (or data frames).
+nDet <- colSums(exprs>1)
+hist(nDet,n=100)
+# make a cutoff at 4000 genes, removes 16 cells
+keep <- which(nDet>4000)
+
+exprs <-exprs[,keep]
+```
+
+Get order of cycle
+
+```{r order}
+source("reCAT_master/R/get_ordIndex.R")
+ordIndex <- get_ordIndex(test_exp, 1)
+```
+
+Get cell-cycle scores
+
+```{r scores}
+source("reCAT_master/R/get_score.R")
+score_result <- get_score(t(test_exp))
+score_result$bayes_score
+score_result$mean_score
+```
+
+Order cells based on cycle usign HMM 
+
+```{r hmm}
+source("reCAT_master/R/get_hmm.R")
+load("embryonic_data/EMTAB2805.rds")
+myord = c(4:1, 295:5)
+hmm_result <- get_hmm_order(bayes_score = score_result$bayes_score, 
+	mean_score = score_result$mean_score, 
+	ordIndex = ordIndex, cls_num = 3, myord = myord, rdata = rdata)
+```
+
+
+# get tpms at gene level
+
+# The Assays virtual class and its methods provide a formal abstraction of the assays slot of SummarizedExperiment object
+# The RangedSummarizedExperiment class is a matrix-like container where rows represent ranges of interest and columns represent samples (with sample data summarized as a DataFrame).
+# A RangedSummarizedExperiment contains one or more assays, each represented by a matrix-like object of numeric or other mode.
+# exprs <- assays(experiments(cc.data)[["gene"]])[["TPM"]]
+# remove the .1 etc from the ensembl gene name
+# gname <- rownames(exprs)
+# ensname <- gsub("\\.\\d+","",gname)
+# rownames(exprs) <- ensname
+
+# remove spike-ins from expression table
+# ercc <- grep("ERCC",rownames(exprs))
+# exprs <- exprs[-ercc,]
+# exprs[is.na(exprs)] <- 0
+
+# metadata with cell cycle stage assignment
+# colData: Each column of a SummarizedExperiment object represents a sample. Information about the samples are stored in a DataFrame, accessible using the function colData
+# M <- as.data.frame(colData(cc.data))
+# head(M)
