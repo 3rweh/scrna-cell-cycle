@@ -59,9 +59,9 @@ normalize <- function(counts)
 
 ## Load the glioblastoma single cell RNA-Seq data
 ```{r load_data, echo=TRUE}
-data("Patel_Glioblastoma_scRNAseq_Read_Counts")
-data("Patel_Glioblastoma_scRNAseq_Annotations")
-data("Patel_Glioblastoma_scRNAseq_ENSG_ID")
+load(file = "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_data/Patel_Glioblastoma_scRNAseq_Read_Counts.rda")
+load(file= "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_data/Patel_Glioblastoma_scRNAseq_Annotations.rda")
+load(file = "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_data/Patel_Glioblastoma_scRNAseq_ENSG_ID.rda")
 ls()
 counts <- Patel_Glioblastoma_scRNAseq_Read_Counts
 anns <- Patel_Glioblastoma_scRNAseq_Annotations
@@ -108,7 +108,7 @@ Percent_Mito <- colSums(counts[mito.genes, ])/colSums(counts)
 ## count-depth relationship for all genes
 Conditions = rep(c(1), each=74)
 countDeptEst <- plotCountDepth(Data = counts, Conditions = Conditions,
-                               FilterCellProportion = .1, NCores=8)
+                               FilterCellProportion = .1, NCores=4)
 
 DataNorm <- SCnorm(Data = counts, Conditions = Conditions,
                    PrintProgressPlots = FALSE,
