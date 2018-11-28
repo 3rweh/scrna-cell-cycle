@@ -23,80 +23,58 @@ Load the data
 
 ```{r data}
 # load("reCAT_master/data/ola_mES_2i.RData")
-cc.data <- readRDS("embryonic_data/EMTAB2805.rds")
+cc_data <- readRDS("embryonic_data/EMTAB2805.rds")
 
-# get tpms at gene level
-exprs <- assays(experiments(cc.data)[["gene"]])[["TPM"]]
+# Get tpms at gene level, TPM = (Transcripts Per Kilobase Million), TPM is generated beforehand through
+# 1. Divide the read counts by the length of each gene in kilobases. This gives you reads per kilobase (RPK).
+# 2. Count up all the RPK values in a sample and divide this number by 1,000,000. This is your “per million” scaling factor.
+# 3. Divide the RPK values by the “per million” scaling factor. This gives you TPM.
 
-# remove spike-ins from expression table
-ercc <- grep("ERCC",rownames(exprs))
-exprs <- exprs[-ercc,]
+# Assays is a subclass of RangedSummarizedExperiment in which A list or SimpleList of matrix-like elements, or a matrix-like object. 
+# All elements of the list must have the same dimensions, and dimension names (if present) must be consistent across elements and 
+# with the row names of rowRanges and colData
 
-# metadata with cell cycle stage assignment
-M <- as.data.frame(colData(cc.data))
-head(M)
+
+# Retrieves the gene vs. counts data
+cc_counts <- assays(cc_data)$gene
+
+# remove spike-ins from expression table,  ERCC = External RNA Controls Consortium (ERCC)
+# External RNA-controls to check for variability, ie: not needed for the analysis
+ercc <- grep("ERCC",rownames(cc_counts))
+cc_counts <- cc_counts[-ercc,]
+
+# remove the .1 etc from the ensembl gene name
+gname <- rownames(cc_counts)
+ensname <- gsub("\\.\\d+","",gname)
+rownames(cc_counts) <- ensname
+
+# Transposes the matrix to work with reCAT's functions
+cc_counts <- t(cc_counts)
+
+# Removes all rows with NA values from the matrix
+cc_counts <- na.omit(cc_counts)
+
+# Inspect the matrix
+indices <- c(1, 20, 33, 44, 64)
+cc_counts[indices,indices]
 ```
 
 ```{r preprocess}
 source("reCAT_master/R/get_test_exp.R")
-test_exp <- get_test_exp(test_exp)
-exprs <- assays(experiments(cc.data)[["gene"]])[["TPM"]]
-
-# filter out cells with low nDet
-# Colsums = Form row and column sums and means for numeric arrays (or data frames).
-nDet <- colSums(exprs>1)
-hist(nDet,n=100)
-# make a cutoff at 4000 genes, removes 16 cells
-keep <- which(nDet>4000)
-
-exprs <-exprs[,keep]
+pre_counts <- cc_counts
+pre_counts <- get_test_exp(pre_counts)
 ```
-
-Get order of cycle
 
 ```{r order}
 source("reCAT_master/R/get_ordIndex.R")
-ordIndex <- get_ordIndex(test_exp, 1)
+ordIndex <- get_ordIndex(cc_counts, 1)
 ```
 
 Get cell-cycle scores
 
 ```{r scores}
 source("reCAT_master/R/get_score.R")
-score_result <- get_score(t(test_exp))
+score_result <- get_score(t(cc_counts))
 score_result$bayes_score
 score_result$mean_score
 ```
-
-Order cells based on cycle usign HMM 
-
-```{r hmm}
-source("reCAT_master/R/get_hmm.R")
-load("embryonic_data/EMTAB2805.rds")
-myord = c(4:1, 295:5)
-hmm_result <- get_hmm_order(bayes_score = score_result$bayes_score, 
-	mean_score = score_result$mean_score, 
-	ordIndex = ordIndex, cls_num = 3, myord = myord, rdata = rdata)
-```
-
-
-# get tpms at gene level
-
-# The Assays virtual class and its methods provide a formal abstraction of the assays slot of SummarizedExperiment object
-# The RangedSummarizedExperiment class is a matrix-like container where rows represent ranges of interest and columns represent samples (with sample data summarized as a DataFrame).
-# A RangedSummarizedExperiment contains one or more assays, each represented by a matrix-like object of numeric or other mode.
-# exprs <- assays(experiments(cc.data)[["gene"]])[["TPM"]]
-# remove the .1 etc from the ensembl gene name
-# gname <- rownames(exprs)
-# ensname <- gsub("\\.\\d+","",gname)
-# rownames(exprs) <- ensname
-
-# remove spike-ins from expression table
-# ercc <- grep("ERCC",rownames(exprs))
-# exprs <- exprs[-ercc,]
-# exprs[is.na(exprs)] <- 0
-
-# metadata with cell cycle stage assignment
-# colData: Each column of a SummarizedExperiment object represents a sample. Information about the samples are stored in a DataFrame, accessible using the function colData
-# M <- as.data.frame(colData(cc.data))
-# head(M)
