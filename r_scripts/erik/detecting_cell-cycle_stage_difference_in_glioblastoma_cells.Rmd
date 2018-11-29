@@ -113,7 +113,7 @@ countDeptEst <- plotCountDepth(Data = counts, Conditions = Conditions,
 DataNorm <- SCnorm(Data = counts, Conditions = Conditions,
                    PrintProgressPlots = FALSE,
                    FilterCellNum = 10,
-                   NCores=8)
+                   NCores=4)
 counts <- SingleCellExperiment::normcounts(DataNorm)
 summary(colSums(counts))
 dim(counts)
@@ -172,7 +172,7 @@ associated with SV1 (multiple testing adjusted p-value < 0.05,
 default significance cutoff, and R-squared value > 0.3).  
 ```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
 # try different R2 thresholds
-pdf(paste0("output/Clustering_analyses_figure3_sv1.pdf"))
+pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/Clustering_analyses_figure3_sv1.pdf"))
 r2.results <- study_R2(summ_exp, iasva.sv,selected.svs=1, no.clusters=2)
 dev.off()
 
@@ -201,11 +201,11 @@ pheatmap(log(marker.counts.SV1.long+1), show_colnames =FALSE,
          annotation_colors = anno.colors)
 
 gene.list <- rownames(marker.counts.SV1)
-write.table(gene.list, file = paste0("output/CC_genes.short.txt"),
+write.table(gene.list, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/CC_genes.short.txt"),
             col.names =F, row.names = F, quote = F)
 
 gene.list <- rownames(marker.counts.SV1.long)
-write.table(gene.list, file = paste0("output/CC_genes.long.txt"),
+write.table(gene.list, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/CC_genes.long.txt"),
             col.names =F, row.names = F, quote = F)
 
 ```
@@ -317,7 +317,7 @@ library size (the first principal component). Existing methods fail to detect
 the heterogeneity due to the orthogonality assumption.
 
 ```{r  gen_Figure3ABCDE, fig.width=5, fig.height=8}
-pdf(file=paste0("output/Patel_Glioblastoma_MGH30_CellCycle_Figure3ABCD.pdf"), width=5, height=8)
+pdf(file=paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/Patel_Glioblastoma_MGH30_CellCycle_Figure3ABCD.pdf"), width=5, height=8)
 layout(matrix(c(1,2,3,4,5,5), nrow=3, ncol=2, byrow=TRUE))
 plot(iasva.sv[,1:2], main="IA-SVA", pch=21, xlab="SV1", ylab="SV2",
      col=color.vec[Cluster], bg=color.vec[Cluster], oma=c(4,4,6,12))
@@ -350,7 +350,7 @@ pheatmap(log(marker.counts.SV1.long+1), show_colnames =FALSE,
 pheatmap(log(marker.counts.SV1.long+1), show_colnames =FALSE,
          clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2,
          annotation_colors = anno.colors,
-         filename=paste0("output/Patel_Glioblastoma_MGH30_iasva_SV1_genes_rsqcutoff0.3_pheatmap_iasvaV0.95_Figure3F.pdf"),
+         filename=paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/Patel_Glioblastoma_MGH30_iasva_SV1_genes_rsqcutoff0.3_pheatmap_iasvaV0.95_Figure3F.pdf"),
          width=6, height=16)
 
 ```
@@ -358,10 +358,10 @@ pheatmap(log(marker.counts.SV1.long+1), show_colnames =FALSE,
 
 ```{r gen_SV1_gene_list}
 write.table(as.data.frame(rownames(marker.counts.SV1)), 
-            file=paste0("output/Patel_Glioblastoma_MGH30_Cellcycle_SV1_Genes_rsqcutoff0.4.txt"),
+            file=paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/Patel_Glioblastoma_MGH30_Cellcycle_SV1_Genes_rsqcutoff0.4.txt"),
             quote=F, row.names=F, col.names=F, sep=" ")
 
 write.table(as.data.frame(rownames(marker.counts.SV1.long)), 
-            file=paste0("output/Patel_Glioblastoma_MGH30_Cellcycle_SV1_Genes_rsqcutoff0.3.txt"), 
+            file=paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/Patel_Glioblastoma_MGH30_Cellcycle_SV1_Genes_rsqcutoff0.3.txt"), 
             quote=F, row.names=F, col.names=F, sep=" ")
 ```
