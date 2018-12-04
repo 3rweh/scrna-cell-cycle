@@ -81,23 +81,24 @@ is stored in "counts".
 
 ## Load the Buettner single cell RNA-Seq data
 ```{r load_data, echo=TRUE}
-cc.data <- readRDS("/Users/erikh/Desktop/git/scrna-cell-cycle/embryonic_data/EMTAB2805.rds")
+buettner.data <- readRDS("/Users/erikh/Desktop/git/scrna-cell-cycle/embryonic_data/EMTAB2805.rds")
 
 # get tpms at gene level
-exprs <- assays(experiments(cc.data)[["gene"]])[["TPM"]]
+buet_exprs <- assays(experiments(buettner.data)[["gene"]])[["TPM"]]
+dim(buet_exprs)
 # remove the .1 etc from the ensembl gene name
-gname <- rownames(exprs)
+gname <- rownames(buet_exprs)
 ensname <- gsub("\\.\\d+","",gname)
-rownames(exprs) <- ensname
+rownames(buet_exprs) <- ensname
 
 # remove spike-ins from expression table
-ercc <- grep("ERCC",rownames(exprs))
-exprs <- exprs[-ercc,]
-dim(exprs)
+ercc <- grep("ERCC",rownames(buet_exprs))
+buet_exprs <- buet_exprs[-ercc,]
 
 # metadata with cell cycle stage assignment
-M <- as.data.frame(colData(cc.data))
+M <- as.data.frame(colData(buettner.data))
 head(M)
+dim(buet_exprs)
 ```
 
 ## Extract glioblastoma cells from Patient MGH30 
@@ -112,22 +113,36 @@ prop.zeros <- sum(counts==0)/length(counts)
 prop.zeros
 # filter out genes that are sparsely and lowly expressed in both data sets
 filter = apply(counts, 1, function(x) length(x[x>5])>=3)
-filter_cc = apply(exprs, 1, function(x) length(x[x>5])>=3)
 counts = counts[filter,]
-exprs = exprs[filter_cc,]
 dim(counts)
-dim(exprs)
 ENSG.ID <- ENSG.ID[filter]
 length(ENSG.ID)
 prop.zeros <- sum(counts==0)/length(counts)
 prop.zeros
-prop.zeros_cc <- sum(exprs==0)/length(exprs)
-prop.zeros_cc
 Subtype <- anns$subtype
 Patient_ID <- anns$patient_id
 mito.genes <- grep(pattern = "^MT-", x = rownames(x = counts), value = TRUE)
 Percent_Mito <- colSums(counts[mito.genes, ])/colSums(counts)
 ```
+## Filter out clearly low quality cells from Buettner data
+
+Clearly some outlier cells on negative PC1 with low number of genes with pca using full dataset.
+
+Mainly S-phase cells, even if most S-phase cells have a high median expression.
+
+```{r filter}
+# filter out cells with low nDet
+nDet <- colSums(buet_exprs>1)
+hist(nDet,n=100)
+# make a cutoff at 4000 genes, removes 16 cells
+keep <- which(nDet>4000)
+
+buet_exprs<-buet_exprs[,keep]
+M <- M[keep,]
+dim(buet_exprs)
+
+```
+
 
 ## Normalization using SCnorm for Glioblastoma
 ```{r normalization, fig.width=8, fig.height=6}
@@ -148,17 +163,8 @@ dim(counts)
 ## Normalization using SCnorm for Buettner data
 ```{r normalization, fig.width=8, fig.height=6}
 ## count-depth relationship for all genes
-Conditions = rep(c(1), each=288)
-countDeptEst_cc <- plotCountDepth(Data = exprs, Conditions = Conditions,
-                               FilterCellProportion = .1, NCores=4)
-
-DataNorm_cc <- SCnorm(Data = exprs, Conditions = Conditions,
-                   PrintProgressPlots = FALSE,
-                   FilterCellNum = 10,
-                   NCores=4)
-exprs <- SingleCellExperiment::normcounts(DataNorm_cc)
-summary(colSums(exprs))
-dim(exprs)
+norm_buet <- SingleCellExperiment(assays=list(counts = buet_exprs, logcounts = log2(buet_exprs+1)))
+dim(norm_buet)
 ```
 
 ## Calculate the number of detected genes 
