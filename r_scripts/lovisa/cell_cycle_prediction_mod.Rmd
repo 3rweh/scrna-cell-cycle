@@ -77,26 +77,6 @@ sce <- SingleCellExperiment(assays=list(counts = exprs, logcounts = log2(exprs+1
 cc <- cyclone(sce, pairs=mmu.pairs)
 
 table(cc$phase)
-test <- table(M$cell_cycle_stage)
-
-library(stringr)
-str_replace_all(M$cell_cycle_stage, "[\r\n]" , "")
-
-test1 <- table(test)
-
-
-# removes header
-cat(test1, file = "actual.txt")
-
-write(test1, file = "actual.txt",
-      ncolumns = if(is.character(test1)) 1 else 5,
-      append = FALSE, sep = " ")
-
-# adds newline in the beginning
-sink('actual.txt')
-print(test,right=F)
-sink()
-
 
 # creating table file for cyclone predition
 write(table(cc$phase), file = "predicted_cyclone.txt",
@@ -109,9 +89,8 @@ write(table(M$cell_cycle_stage), file = "actual.txt",
       append = FALSE, sep = " ")
 
 
-
 # plot overlap matrix:
-source("scripts/scrnaseq.R")
+source("/Users/Lovisa Lundeberg/Documents/scrna-cell-cycle/r_scripts/cyclone_functions.R")
 nS <- length(cc$phase)
 o <- overlap_phyper2(split(1:nS,cc$phase),split(1:nS,M$cell_cycle_stage),plot=T)
 ```

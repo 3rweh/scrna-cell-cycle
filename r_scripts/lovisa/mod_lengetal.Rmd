@@ -1,0 +1,84 @@
+---
+title: "mod_lengetal"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Script for modifing data from Leng et al.
+
+Script reads in the whole matrix of data from Leng et al and only saves the cells (columns) that are annotated according to cell cycle phase. (G1=91, S=80, G2M=76)
+
+The matrix can be downloaded from this link https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE64016. 
+
+```{r data}
+#reading in datafile
+lengetal <- read.csv("/Users/Lovisa Lundeberg/Documents/slutkurs/data/lengetal.csv", header = TRUE, sep = ",", quote = "\"")
+
+#saving the columns that are labeled (215-461) into new matrix
+lengetal_annotated <- lengetal[,c(215:461)]
+
+#adding rownames that are in the first column of the original data
+rownames(lengetal_annotated) <- paste(lengetal[,c(1)])
+
+#Writing the labeled data into a csv file
+#write.csv(lengetal_annotated,"/Users/Lovisa #Lundeberg/Documents/slutkurs/data/lengetal_annotated.csv")
+
+exprs_an <- lengetal_annotated
+```
+
+## Including Plots
+
+```{r load, warning=FALSE}
+
+suppressPackageStartupMessages(library(SummarizedExperiment))
+suppressPackageStartupMessages(library(MultiAssayExperiment))
+
+suppressPackageStartupMessages(library(plotrix))
+suppressPackageStartupMessages(library(Seurat))
+suppressPackageStartupMessages(library(scran))
+suppressPackageStartupMessages(library(gridExtra))
+
+```
+
+
+```{r filter}
+# filter out cells with low nDet
+nDet <- colSums(exprs_an>1)
+hist(nDet,n=100)
+# make a cutoff at 4000 genes, removes 16 cells
+keep <- which(nDet>4000)
+
+exprs_an<-exprs_an[,keep]
+#M <- M[keep,]
+```
+```{r cyclone, warning=F}
+mmu.pairs <- readRDS(system.file("exdata", "mouse_cycle_markers.rds", package="scran"))
+
+set.seed(123)
+sce_leng <- SingleCellExperiment(assays=list(counts = exprs_an, logcounts = log2(exprs_an+1)))
+cc <- cyclone(sce_leng, pairs=mmu.pairs)
+```
+```{r filter}
+sdata <- CreateSeuratObject(raw.data = exprs_an, min.cells = 3, min.genes = 200,
+    project = "testseurat",is.expr=1,meta.data=NULL)
+
+sdata <- NormalizeData(sdata)
+sdata <- ScaleData(sdata)
+sdata <- FindVariableGenes(object = sdata, mean.function = ExpMean, 
+                           dispersion.function = LogVMR, x.low.cutoff = 0.2, 
+                           x.high.cutoff = 10, y.cutoff = 0.5)
+
+#before running this part you have to run the convert_name chunk in the original script to get the genes for human associated with each cycle. It is then saved as a variable. I will look into this further and include it in this code as well.
+
+# run PCA
+sdata <- RunPCA(object = sdata, pc.genes = sdata@var.genes, do.print = FALSE)  
+# predict cell cycle
+sdata <- CellCycleScoring(sdata, g2m.genes = cc.genes$g2m.genes, 
+                          s.genes = cc.genes$s.genes)
+
+table(sdata@meta.data$Phase)
+
+```
