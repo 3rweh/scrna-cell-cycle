@@ -59,9 +59,9 @@ normalize <- function(counts)
 
 ## Load the glioblastoma single cell RNA-Seq data
 ```{r load_data, echo=TRUE}
-load(file = "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_data/Patel_Glioblastoma_scRNAseq_Read_Counts.rda")
-load(file= "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_data/Patel_Glioblastoma_scRNAseq_Annotations.rda")
-load(file = "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_data/Patel_Glioblastoma_scRNAseq_ENSG_ID.rda")
+load(file = "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_data/Patel_Glioblastoma_scRNAseq_Read_Counts.rda")
+load(file= "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_data/Patel_Glioblastoma_scRNAseq_Annotations.rda")
+load(file = "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_data/Patel_Glioblastoma_scRNAseq_ENSG_ID.rda")
 ls()
 counts <- Patel_Glioblastoma_scRNAseq_Read_Counts
 anns <- Patel_Glioblastoma_scRNAseq_Annotations
@@ -79,46 +79,205 @@ The annotations describing the glioblastoma samples and experimental
 settings are stored in "anns" and the read counts information
 is stored in "counts".
 
+## Extract glioblastoma cells from Patient MGH26 
+We use read counts of glioblastoma cells from Patient MGH26 (n = 118).   
+```{r MGH26_cells, echo=TRUE, results='asis'}
+counts_MGH26 <- counts[, (anns$patient_id=="MGH26")] 
+anns_MGH26 <- subset(anns, (patient_id=="MGH26"))
+dim(counts_MGH26)
+dim(anns_MGH26)
+anns_MGH26 <- droplevels(anns_MGH26)
+prop.zeros_MGH26 <- sum(counts_MGH26==0)/length(counts_MGH26)
+prop.zeros_MGH26
+# filter out genes that are sparsely and lowly expressed
+filter_MGH26 = apply(counts_MGH26, 1, function(x) length(x[x>5])>=3)
+counts_MGH26 = counts_MGH26[filter_MGH26,]
+dim(counts_MGH26)
+ENSG.ID_MGH26 <- ENSG.ID[filter_MGH26]
+length(ENSG.ID_MGH26)
+prop.zeros_MGH26 <- sum(counts_MGH26==0)/length(counts_MGH26)
+prop.zeros_MGH26
+Subtype_MGH26 <- anns_MGH26$subtype
+Patient_ID_MGH26 <- anns_MGH26$patient_id
+mito.genes_MGH26 <- grep(pattern = "^MT-", x = rownames(x = counts_MGH26), value = TRUE)
+Percent_Mito_MGH26 <- colSums(counts_MGH26[mito.genes_MGH26, ])/colSums(counts_MGH26)
+```
+
+## Extract glioblastoma cells from Patient MGH28 
+We use read counts of glioblastoma cells from Patient MGH28 (n = 95).   
+```{r MGH28_cells, echo=TRUE, results='asis'}
+counts_MGH28 <- counts[, (anns$patient_id=="MGH28")] 
+anns_MGH28 <- subset(anns, (patient_id=="MGH28"))
+dim(counts_MGH28)
+dim(anns_MGH28)
+anns_MGH28 <- droplevels(anns_MGH28)
+prop.zeros_MGH28 <- sum(counts_MGH28==0)/length(counts_MGH28)
+prop.zeros_MGH28
+# filter out genes that are sparsely and lowly expressed
+filter_MGH28 = apply(counts_MGH28, 1, function(x) length(x[x>5])>=3)
+counts_MGH28 = counts_MGH28[filter_MGH28,]
+dim(counts_MGH28)
+ENSG.ID_MGH28 <- ENSG.ID[filter_MGH28]
+length(ENSG.ID_MGH28)
+prop.zeros_MGH28 <- sum(counts_MGH28==0)/length(counts_MGH28)
+prop.zeros_MGH28
+Subtype_MGH28 <- anns_MGH28$subtype
+Patient_ID_MGH28 <- anns_MGH28$patient_id
+mito.genes_MGH28 <- grep(pattern = "^MT-", x = rownames(x = counts_MGH28), value = TRUE)
+Percent_Mito_MGH28 <- colSums(counts_MGH28[mito.genes_MGH28, ])/colSums(counts_MGH28)
+```
+
+## Extract glioblastoma cells from Patient MGH29 
+We use read counts of glioblastoma cells from Patient MGH29 (n = 76).   
+```{r MGH28_cells, echo=TRUE, results='asis'}
+counts_MGH29 <- counts[, (anns$patient_id=="MGH29")] 
+anns_MGH29 <- subset(anns, (patient_id=="MGH29"))
+dim(counts_MGH29)
+dim(anns_MGH29)
+anns_MGH29 <- droplevels(anns_MGH29)
+prop.zeros_MGH29 <- sum(counts_MGH29==0)/length(counts_MGH29)
+prop.zeros_MGH29
+# filter out genes that are sparsely and lowly expressed
+filter_MGH29 = apply(counts_MGH29, 1, function(x) length(x[x>5])>=3)
+counts_MGH29 = counts_MGH29[filter_MGH29,]
+dim(counts_MGH29)
+ENSG.ID_MGH29 <- ENSG.ID[filter_MGH29]
+length(ENSG.ID_MGH29)
+prop.zeros_MGH29 <- sum(counts_MGH29==0)/length(counts_MGH29)
+prop.zeros_MGH29
+Subtype_MGH29 <- anns_MGH29$subtype
+Patient_ID_MGH29 <- anns_MGH29$patient_id
+mito.genes_MGH29 <- grep(pattern = "^MT-", x = rownames(x = counts_MGH29), value = TRUE)
+Percent_Mito_MGH29 <- colSums(counts_MGH29[mito.genes_MGH29, ])/colSums(counts_MGH29)
+```
+
 ## Extract glioblastoma cells from Patient MGH30 
 We use read counts of glioblastoma cells from Patient MGH30 (n = 74).   
 ```{r MGH30_cells, echo=TRUE, results='asis'}
-counts <- counts[, (anns$patient_id=="MGH30")] 
-anns <- subset(anns, (patient_id=="MGH30"))
-dim(counts)
-dim(anns)
-anns <- droplevels(anns)
-prop.zeros <- sum(counts==0)/length(counts)
-prop.zeros
+counts_MGH30 <- counts[, (anns$patient_id=="MGH30")] 
+anns_MGH30 <- subset(anns, (patient_id=="MGH30"))
+dim(counts_MGH30)
+dim(anns_MGH30)
+anns_MGH30 <- droplevels(anns_MGH30)
+prop.zeros_MGH30 <- sum(counts_MGH30==0)/length(counts_MGH30)
+prop.zeros_MGH30
 # filter out genes that are sparsely and lowly expressed
-filter = apply(counts, 1, function(x) length(x[x>5])>=3)
-counts = counts[filter,]
-dim(counts)
-ENSG.ID <- ENSG.ID[filter]
-length(ENSG.ID)
-prop.zeros <- sum(counts==0)/length(counts)
-prop.zeros
-Subtype <- anns$subtype
-Patient_ID <- anns$patient_id
-mito.genes <- grep(pattern = "^MT-", x = rownames(x = counts), value = TRUE)
-Percent_Mito <- colSums(counts[mito.genes, ])/colSums(counts)
+filter_MGH30 = apply(counts_MGH30, 1, function(x) length(x[x>5])>=3)
+counts_MGH30 = counts_MGH30[filter_MGH30,]
+dim(counts_MGH30)
+ENSG.ID_MGH30 <- ENSG.ID[filter_MGH30]
+length(ENSG.ID_MGH30)
+prop.zeros_MGH30 <- sum(counts_MGH30==0)/length(counts_MGH30)
+prop.zeros_MGH30
+Subtype_MGH30 <- anns_MGH30$subtype
+Patient_ID_MGH30 <- anns_MGH30$patient_id
+mito.genes_MGH30 <- grep(pattern = "^MT-", x = rownames(x = counts_MGH30), value = TRUE)
+Percent_Mito_MGH30 <- colSums(counts_MGH30[mito.genes_MGH30, ])/colSums(counts_MGH30)
 ```
 
-## Normalization using SCnorm
+## Extract glioblastoma cells from Patient MGH31 
+We use read counts of glioblastoma cells from Patient MGH31 (n = 71).   
+```{r MGH31_cells, echo=TRUE, results='asis'}
+counts_MGH31 <- counts[, (anns$patient_id=="MGH31")] 
+anns_MGH31 <- subset(anns, (patient_id=="MGH31"))
+dim(counts_MGH31)
+dim(anns_MGH31)
+anns_MGH31 <- droplevels(anns_MGH31)
+prop.zeros_MGH31 <- sum(counts_MGH31==0)/length(counts_MGH31)
+prop.zeros_MGH31
+# filter out genes that are sparsely and lowly expressed
+filter_MGH31 = apply(counts_MGH31, 1, function(x) length(x[x>5])>=3)
+counts_MGH31 = counts_MGH31[filter_MGH31,]
+dim(counts_MGH31)
+ENSG.ID_MGH31 <- ENSG.ID[filter_MGH31]
+length(ENSG.ID_MGH31)
+prop.zeros_MGH31 <- sum(counts_MGH31==0)/length(counts_MGH31)
+prop.zeros_MGH31
+Subtype_MGH31 <- anns_MGH31$subtype
+Patient_ID_MGH31 <- anns_MGH31$patient_id
+mito.genes_MGH31 <- grep(pattern = "^MT-", x = rownames(x = counts_MGH31), value = TRUE)
+Percent_Mito_MGH31 <- colSums(counts_MGH31[mito.genes_MGH31, ])/colSums(counts_MGH31)
+```
+
+## Normalization on patient MGH26 data using SCnorm
 ```{r normalization, fig.width=8, fig.height=6}
 ## count-depth relationship for all genes
-Conditions = rep(c(1), each=74)
-countDeptEst <- plotCountDepth(Data = counts, Conditions = Conditions,
+Conditions = rep(c(1), each=118)
+countDeptEst_MGH26 <- plotCountDepth(Data = counts_MGH26, Conditions = Conditions,
                                FilterCellProportion = .1, NCores=4)
 
-DataNorm <- SCnorm(Data = counts, Conditions = Conditions,
+DataNorm_MGH26 <- SCnorm(Data = counts_MGH26, Conditions = Conditions,
                    PrintProgressPlots = FALSE,
                    FilterCellNum = 10,
                    NCores=4)
-counts <- SingleCellExperiment::normcounts(DataNorm)
-summary(colSums(counts))
-dim(counts)
+counts_MGH26 <- SingleCellExperiment::normcounts(DataNorm_MGH26)
+summary(colSums(counts_MGH26))
+dim(counts_MGH26)
 ```
 
+## Normalization on patient MGH28 data using SCnorm
+```{r normalization, fig.width=8, fig.height=6}
+## count-depth relationship for all genes
+Conditions = rep(c(1), each=95)
+countDeptEst_MGH28 <- plotCountDepth(Data = counts_MGH28, Conditions = Conditions,
+                               FilterCellProportion = .1, NCores=4)
+
+DataNorm_MGH28 <- SCnorm(Data = counts_MGH28, Conditions = Conditions,
+                   PrintProgressPlots = FALSE,
+                   FilterCellNum = 10,
+                   NCores=4)
+counts_MGH28 <- SingleCellExperiment::normcounts(DataNorm_MGH28)
+summary(colSums(counts_MGH28))
+dim(counts_MGH28)
+```
+
+## Normalization on patient MGH29 data using SCnorm
+```{r normalization, fig.width=8, fig.height=6}
+## count-depth relationship for all genes
+Conditions = rep(c(1), each=76)
+countDeptEst_MGH29 <- plotCountDepth(Data = counts_MGH29, Conditions = Conditions,
+                               FilterCellProportion = .1, NCores=4)
+
+DataNorm_MGH29 <- SCnorm(Data = counts_MGH29, Conditions = Conditions,
+                   PrintProgressPlots = FALSE,
+                   FilterCellNum = 10,
+                   NCores=4)
+counts_MGH29 <- SingleCellExperiment::normcounts(DataNorm_MGH29)
+summary(colSums(counts_MGH29))
+dim(counts_MGH29)
+```
+
+## Normalization on patient MGH30 data using SCnorm
+```{r normalization, fig.width=8, fig.height=6}
+## count-depth relationship for all genes
+Conditions = rep(c(1), each=74)
+countDeptEst_MGH30 <- plotCountDepth(Data = counts_MGH30, Conditions = Conditions,
+                               FilterCellProportion = .1, NCores=4)
+
+DataNorm_MGH30 <- SCnorm(Data = counts_MGH30, Conditions = Conditions,
+                   PrintProgressPlots = FALSE,
+                   FilterCellNum = 10,
+                   NCores=4)
+counts_MGH30 <- SingleCellExperiment::normcounts(DataNorm_MGH30)
+summary(colSums(counts_MGH30))
+dim(counts_MGH30)
+```
+
+## Normalization on patient MGH31 data using SCnorm
+```{r normalization, fig.width=8, fig.height=6}
+## count-depth relationship for all genes
+Conditions = rep(c(1), each=71)
+countDeptEst_MGH31 <- plotCountDepth(Data = counts_MGH31, Conditions = Conditions,
+                               FilterCellProportion = .1, NCores=4)
+
+DataNorm_MGH31 <- SCnorm(Data = counts_MGH31, Conditions = Conditions,
+                   PrintProgressPlots = FALSE,
+                   FilterCellNum = 10,
+                   NCores=4)
+counts_MGH31 <- SingleCellExperiment::normcounts(DataNorm_MGH31)
+summary(colSums(counts_MGH31))
+dim(counts_MGH31)
+```
 
 ## Calculate the number of detected genes 
 It is well known that the number of detected genes in each cell explains
