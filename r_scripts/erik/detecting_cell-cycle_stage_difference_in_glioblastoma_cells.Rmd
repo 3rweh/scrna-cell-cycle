@@ -288,15 +288,56 @@ Frequently, the first principal component of log-transformed scRNA-Seq read coun
 with the number of detected genes (e.g., r > 0.9). Here, we calculate the number of detected genes 
 for glioblastoma cells, which will be used as an known factor in the IA-SVA analyses. 
 ```{r num_detected_genes, echo=TRUE, fig.width=7, fig.height=4}
-Num_Detected_Genes <- colSums(counts>0)
-Geo_Lib <- colSums(log(counts+1))
-summary(Geo_Lib)
-barplot(Geo_Lib, xlab="Cell", las=2, ylab = "Geometric library size")
-lcounts <- log(counts + 1)
+# MGH26
+Num_Detected_Genes_MGH26 <- colSums(counts_MGH26>0)
+Geo_Lib_MGH26 <- colSums(log(counts_MGH26+1))
+summary(Geo_Lib_MGH26)
+barplot(Geo_Lib_MGH26, xlab="Cell", las=2, ylab = "Geometric library size")
+lcounts_MGH26 <- log(counts_MGH26 + 1)
 # PC1 and Geometric library size correlation
-pc1 = irlba(lcounts - rowMeans(lcounts), 1)$v[,1] ## partial SVD
-cor(Num_Detected_Genes, pc1)
-cor(Geo_Lib, pc1)
+pc1_MGH26 = irlba(lcounts_MGH26 - rowMeans(lcounts_MGH26), 1)$v[,1] ## partial SVD
+cor(Num_Detected_Genes_MGH26, pc1_MGH26)
+cor(Geo_Lib_MGH26, pc1_MGH26)
+# MGH28
+Num_Detected_Genes_MGH28 <- colSums(counts_MGH28>0)
+Geo_Lib_MGH28 <- colSums(log(counts_MGH28+1))
+summary(Geo_Lib_MGH28)
+barplot(Geo_Lib_MGH28, xlab="Cell", las=2, ylab = "Geometric library size")
+lcounts_MGH28 <- log(counts_MGH28 + 1)
+# PC1 and Geometric library size correlation
+pc1_MGH28 = irlba(lcounts_MGH28 - rowMeans(lcounts_MGH28), 1)$v[,1] ## partial SVD
+cor(Num_Detected_Genes_MGH28, pc1_MGH28)
+cor(Geo_Lib_MGH28, pc1_MGH28)
+# MGH29
+Num_Detected_Genes_MGH29 <- colSums(counts_MGH29>0)
+Geo_Lib_MGH29 <- colSums(log(counts_MGH29+1))
+summary(Geo_Lib_MGH29)
+barplot(Geo_Lib_MGH29, xlab="Cell", las=2, ylab = "Geometric library size")
+lcounts_MGH29 <- log(counts_MGH29 + 1)
+# PC1 and Geometric library size correlation
+pc1_MGH29 = irlba(lcounts_MGH29 - rowMeans(lcounts_MGH29), 1)$v[,1] ## partial SVD
+cor(Num_Detected_Genes_MGH29, pc1_MGH29)
+cor(Geo_Lib_MGH29, pc1_MGH29)
+#MGH30
+Num_Detected_Genes_MGH30 <- colSums(counts_MGH30>0)
+Geo_Lib_MGH30 <- colSums(log(counts_MGH30+1))
+summary(Geo_Lib_MGH30)
+barplot(Geo_Lib_MGH30, xlab="Cell", las=2, ylab = "Geometric library size")
+lcounts_MGH30 <- log(counts_MGH30 + 1)
+# PC1 and Geometric library size correlation
+pc1_MGH30 = irlba(lcounts_MGH30 - rowMeans(lcounts_MGH30), 1)$v[,1] ## partial SVD
+cor(Num_Detected_Genes_MGH30, pc1_MGH30)
+cor(Geo_Lib_MGH30, pc1_MGH30)
+# MGH31
+Num_Detected_Genes_MGH31 <- colSums(counts_MGH31>0)
+Geo_Lib_MGH31 <- colSums(log(counts_MGH31+1))
+summary(Geo_Lib_MGH31)
+barplot(Geo_Lib_MGH31, xlab="Cell", las=2, ylab = "Geometric library size")
+lcounts_MGH31 <- log(counts_MGH31 + 1)
+# PC1 and Geometric library size correlation
+pc1_MGH31 = irlba(lcounts_MGH31 - rowMeans(lcounts_MGH31), 1)$v[,1] ## partial SVD
+cor(Num_Detected_Genes_MGH31, pc1_MGH31)
+cor(Geo_Lib_MGH31, pc1_MGH31)
 ```
 
 ## Run IA-SVA
