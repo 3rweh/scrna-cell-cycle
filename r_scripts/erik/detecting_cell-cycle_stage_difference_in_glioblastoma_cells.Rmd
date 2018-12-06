@@ -690,10 +690,119 @@ G1_MGH26 <- iasva.sv_MGH26[,1][phase_MGH26=="G1"]
 S_MGH26 <- iasva.sv_MGH26[,1][phase_MGH26=="S"]
 G2M_MGH26 <- iasva.sv_MGH26[,1][phase_MGH26=="G2M"]
 Unknown_MGH26 <- iasva.sv_MGH26[,1][phase_MGH26=="Unknown"]
-vioplot(G1_MGH26, S_MGH26, G2M_MGH26, Unknown_MGH26, names=c("G1", "S", "G2M", "Unknown"), 
-   col="gold")
+vioplot(G1_MGH26, S_MGH26, G2M_MGH26, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
 title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV1)")
 ```
+
+```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
+ENSG.counts_MGH28 <- counts_MGH28
+rownames(ENSG.counts_MGH28) <- ENSG.ID_MGH28
+sce_MGH28 <- SingleCellExperiment(list(counts=ENSG.counts_MGH28))
+
+# load human cell cycle markers
+hs.pairs_MGH28 <- readRDS(system.file("exdata", 
+                                "human_cycle_markers.rds", package="scran"))
+assigned_MGH28 <- cyclone(sce_MGH28, pairs=hs.pairs_MGH28)
+head(assigned_MGH28$scores)
+table(assigned_MGH28$phases)
+phase_MGH28 <- rep("S", ncol(sce_MGH28))
+phase_MGH28[assigned_MGH28$scores$G1 > 0.5 & assigned_MGH28$scores$G2M < 0.5] <- "G1"
+phase_MGH28[assigned_MGH28$scores$G1 < 0.5 & assigned_MGH28$scores$G2M > 0.5] <- "G2M"
+phase_MGH28[assigned_MGH28$scores$G1 < 0.5 & assigned_MGH28$scores$G2M < 0.5] <- "S"
+phase_MGH28[assigned_MGH28$scores$G1 > 0.5 & assigned_MGH28$scores$G2M > 0.5] <- "Unknown"
+table(phase_MGH28)
+
+G1_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="G1"]
+S_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="S"]
+G2M_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="G2M"]
+Unknown_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="Unknown"]
+vioplot(G1_MGH28, S_MGH28, G2M_MGH28, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV1)")
+```
+
+```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
+ENSG.counts_MGH29 <- counts_MGH29
+rownames(ENSG.counts_MGH29) <- ENSG.ID_MGH29
+sce_MGH29 <- SingleCellExperiment(list(counts=ENSG.counts_MGH29))
+
+# load human cell cycle markers
+hs.pairs_MGH29 <- readRDS(system.file("exdata", 
+                                "human_cycle_markers.rds", package="scran"))
+assigned_MGH29 <- cyclone(sce_MGH29, pairs=hs.pairs_MGH29)
+head(assigned_MGH29$scores)
+table(assigned_MGH29$phases)
+phase_MGH29 <- rep("S", ncol(sce_MGH29))
+phase_MGH29[assigned_MGH29$scores$G1 > 0.5 & assigned_MGH29$scores$G2M < 0.5] <- "G1"
+phase_MGH29[assigned_MGH29$scores$G1 < 0.5 & assigned_MGH29$scores$G2M > 0.5] <- "G2M"
+phase_MGH29[assigned_MGH29$scores$G1 < 0.5 & assigned_MGH29$scores$G2M < 0.5] <- "S"
+phase_MGH29[assigned_MGH29$scores$G1 > 0.5 & assigned_MGH29$scores$G2M > 0.5] <- "Unknown"
+table(phase_MGH29)
+
+G1_MGH29 <- iasva.sv_MGH29[,1][phase_MGH29=="G1"]
+S_MGH29 <- iasva.sv_MGH29[,1][phase_MGH29=="S"]
+G2M_MGH29 <- iasva.sv_MGH29[,1][phase_MGH29=="G2M"]
+Unknown_MGH29 <- iasva.sv_MGH29[,1][phase_MGH29=="Unknown"]
+vioplot(G1_MGH29, S_MGH29, G2M_MGH29, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV1)")
+```
+
+```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
+ENSG.counts_MGH30 <- counts_MGH30
+rownames(ENSG.counts_MGH30) <- ENSG.ID_MGH30
+sce_MGH30 <- SingleCellExperiment(list(counts=ENSG.counts_MGH30))
+
+# load human cell cycle markers
+hs.pairs_MGH30 <- readRDS(system.file("exdata", 
+                                "human_cycle_markers.rds", package="scran"))
+assigned_MGH30 <- cyclone(sce_MGH30, pairs=hs.pairs_MGH30)
+head(assigned_MGH30$scores)
+table(assigned_MGH30$phases)
+phase_MGH30 <- rep("S", ncol(sce_MGH30))
+phase_MGH30[assigned_MGH30$scores$G1 > 0.5 & assigned_MGH30$scores$G2M < 0.5] <- "G1"
+phase_MGH30[assigned_MGH30$scores$G1 < 0.5 & assigned_MGH30$scores$G2M > 0.5] <- "G2M"
+phase_MGH30[assigned_MGH30$scores$G1 < 0.5 & assigned_MGH30$scores$G2M < 0.5] <- "S"
+phase_MGH30[assigned_MGH30$scores$G1 > 0.5 & assigned_MGH30$scores$G2M > 0.5] <- "Unknown"
+table(phase_MGH30)
+
+G1_MGH30 <- iasva.sv_MGH30[,1][phase_MGH30=="G1"]
+S_MGH30 <- iasva.sv_MGH30[,1][phase_MGH30=="S"]
+G2M_MGH30 <- iasva.sv_MGH30[,1][phase_MGH30=="G2M"]
+Unknown_MGH30 <- iasva.sv_MGH30[,1][phase_MGH30=="Unknown"]
+vioplot(G1_MGH30, S_MGH30, G2M_MGH30, Unknown_MGH30, names=c("G1", "S", "G2M", "Unknown"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV1)")
+```
+
+```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
+ENSG.counts_MGH31 <- counts_MGH31
+rownames(ENSG.counts_MGH31) <- ENSG.ID_MGH31
+sce_MGH31 <- SingleCellExperiment(list(counts=ENSG.counts_MGH31))
+
+# load human cell cycle markers
+hs.pairs_MGH31 <- readRDS(system.file("exdata", 
+                                "human_cycle_markers.rds", package="scran"))
+assigned_MGH31 <- cyclone(sce_MGH31, pairs=hs.pairs_MGH31)
+head(assigned_MGH31$scores)
+table(assigned_MGH31$phases)
+phase_MGH31 <- rep("S", ncol(sce_MGH31))
+phase_MGH31[assigned_MGH31$scores$G1 > 0.5 & assigned_MGH31$scores$G2M < 0.5] <- "G1"
+phase_MGH31[assigned_MGH31$scores$G1 < 0.5 & assigned_MGH31$scores$G2M > 0.5] <- "G2M"
+phase_MGH31[assigned_MGH31$scores$G1 < 0.5 & assigned_MGH31$scores$G2M < 0.5] <- "S"
+phase_MGH31[assigned_MGH31$scores$G1 > 0.5 & assigned_MGH31$scores$G2M > 0.5] <- "Unknown"
+table(phase_MGH31)
+
+G1_MGH31 <- iasva.sv_MGH31[,1][phase_MGH31=="G1"]
+S_MGH31 <- iasva.sv_MGH31[,1][phase_MGH31=="S"]
+G2M_MGH31 <- iasva.sv_MGH31[,1][phase_MGH31=="G2M"]
+Unknown_MGH31 <- iasva.sv_MGH31[,1][phase_MGH31=="Unknown"]
+vioplot(G1_MGH31, S_MGH31, G2M_MGH31, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV1)")
+```
+
 ## Run tSNE to detect the hidden heterogeneity.
 For comparison purposes, we applied tSNE on read counts of all genes to
 identify the hidden heterogeneity. We used the Rtsne R package
@@ -716,13 +825,13 @@ by IA-SVA when all genes are used. Same color coding is used as above.
 Here, we apply tSNE on the marker genes for SV1 obtained from IA-SVA
 ```{r run_tsne_post_iasva, echo=TRUE, fig.width=7, fig.height=7}
 set.seed(3452)
-tsne.res <- Rtsne(unique(t(log(marker.counts.SV1.long+1))),
+tsne.res_MGH31 <- Rtsne(unique(t(log(marker.counts.SV1.long_MGH31+1))),
                   dims = 2, perplexity = 20)
 
-plot(tsne.res$Y, main="IA-SVA + tSNE", xlab="tSNE Dim1",
-     ylab="tSNE Dim2", pch=21, col=color.vec[Cluster],
-     bg=color.vec[Cluster], oma=c(4,4,6,12))
-legend("topright", levels(Cluster), border="white", fill=color.vec, bty="n")
+plot(tsne.res_MGH31$Y, main="IA-SVA + tSNE", xlab="tSNE Dim1",
+     ylab="tSNE Dim2", pch=21, col=color.vec[Cluster_MGH31],
+     bg=color.vec[Cluster_MGH31], oma=c(4,4,6,12))
+legend("topright", levels(Cluster_MGH31), border="white", fill=color.vec, bty="n")
 
 ```
 
