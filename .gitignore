@@ -3,8 +3,8 @@
 .RData
 .Ruserdata
 r_scripts/erik/*.Rdata
-r_scripts/erik/sc_data/*
-r_scripts/erik/sc_output/*
+r_scripts/erik/ia_sva/sc_data/*
+r_scripts/erik/ia_sva/sc_output/*
 r_scripts/lovisa/*.Rdata
 r_scripts/lovisa/embryonic_data/*
 r_scripts/hugo/*.Rdata
