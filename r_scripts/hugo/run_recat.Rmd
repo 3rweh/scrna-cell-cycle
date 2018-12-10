@@ -35,46 +35,107 @@ cc_data <- readRDS("embryonic_data/EMTAB2805.rds")
 # with the row names of rowRanges and colData
 
 
-# Retrieves the gene vs. counts data
-cc_counts <- assays(cc_data)$gene
+# Retrieves the gene vs. counts data in TPM
+cc_counts <- assays(experiments(cc_data)[["gene"]])[["TPM"]]
+# Log transforms the data 
+cc_counts <- log(cc_counts+1)
 
-# remove spike-ins from expression table,  ERCC = External RNA Controls Consortium (ERCC)
+# Remove spike-ins from expression table,  ERCC = External RNA Controls Consortium (ERCC)
 # External RNA-controls to check for variability, ie: not needed for the analysis
 ercc <- grep("ERCC",rownames(cc_counts))
 cc_counts <- cc_counts[-ercc,]
 
-# remove the .1 etc from the ensembl gene name
+# Remove the .1 etc from the ensembl gene name
 gname <- rownames(cc_counts)
 ensname <- gsub("\\.\\d+","",gname)
 rownames(cc_counts) <- ensname
 
+# Filter out all cells with a low cell-count
+dim(cc_counts)
+nDet <- colSums(cc_counts>2)
+keep <- which(nDet>4000)
+cc_counts <- cc_counts[,keep]
+dim(cc_counts)
+
 # Transposes the matrix to work with reCAT's functions
 cc_counts <- t(cc_counts)
-
-# Removes all rows with NA values from the matrix
-cc_counts <- na.omit(cc_counts)
 
 # Inspect the matrix
 indices <- c(1, 20, 33, 44, 64)
 cc_counts[indices,indices]
 ```
 
+Clears out all genes not present as marker genes
+
 ```{r preprocess}
 source("reCAT_master/R/get_test_exp.R")
-pre_counts <- cc_counts
-pre_counts <- get_test_exp(pre_counts)
+cc_counts <- get_test_exp(t(cc_counts))
+dim(cc_counts)
+# Transposes the matrix for future use
+cc_counts <- t(cc_counts)
 ```
+
+Orders the data using the TSP algorithm
 
 ```{r order}
 source("reCAT_master/R/get_ordIndex.R")
-ordIndex <- get_ordIndex(cc_counts, 1)
+# cc_counts = input matrix, 3 = no. threads used for processing, can be increased on cluster
+nthread = 3
+ordIndex <- get_ordIndex(cc_counts, nthread)
 ```
 
-Get cell-cycle scores
+Get cell-cycle scores using the Bayes-scores & Mean-scores algorithm
 
 ```{r scores}
 source("reCAT_master/R/get_score.R")
-score_result <- get_score(t(cc_counts))
+score_result <- get_score(cc_counts)
 score_result$bayes_score
 score_result$mean_score
+# cat(score_result$bayes_score, file="bayes_score.txt")
+# cat(score_result$mean_score, file="mean_score.txt")
+```
+
+Plots the score values 
+
+```{r plot_scores}
+source("reCAT_master/R/plot.R")
+plot_bayes(score_result$bayes_score, ordIndex)
+plot_mean(score_result$mean_score, ordIndex)
+```
+
+```{r rdata}
+source("reCAT_master/R/get_rdata.R")
+rdata <- get_rdata(score_result, ordIndex)
+```
+
+Finds the start of the cell-cycle for time-series scoring
+
+```{r get_start}
+source("reCAT_master/R/get_start.R")
+clsnum = 3
+cycle_start = get_start(bayes_score = score_result$bayes_score, mean_score = score_result$mean_score, ordIndex = ordIndex, cls_num = cls_num, rdata = rdata, nthread = nthread)
+```
+
+Finds the cell cycle phases
+
+```{r find_phase}
+source("reCAT_master/R/get_hmm.R")
+
+# Checks the direction of the cycle (the order)
+if(cycle_start >= length(ordIndex))
+{
+	myord = c(rdata[cycle_start,1]:1, (length(ordIndex):(rdata[cycle_start,1]+1)))
+} else {
+	myord = c(rdata[cycle_start,1]:1, ((rdata[cycle_start,1]+1):length(ordIndex)))
+}
+# myord = Time series 
+# clsnum = Class-number (3 = G1, S, G2)
+hmm_result <- get_hmm_order(bayes_score = score_result$bayes_score, mean_score = score_result$mean_score, ordIndex = ordIndex, cls_num = clsnum, myord = myord, rdata = rdata)
+
+g1_c = sum(hmm_result == 1)
+s_c = sum(hmm_result == 2)
+g2m_c = sum(hmm_result == 3)
+
+phase_counts = t(data.frame(g1_c , s_c, g2m_c))
+write.table(phase_counts,"recat_phase_output.txt",sep="\t",col.names = FALSE, row.names=FALSE)
 ```
