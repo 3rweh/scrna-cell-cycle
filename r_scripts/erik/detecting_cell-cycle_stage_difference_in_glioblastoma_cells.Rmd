@@ -713,7 +713,10 @@ phase_MGH28[assigned_MGH28$scores$G1 < 0.5 & assigned_MGH28$scores$G2M < 0.5] <-
 phase_MGH28[assigned_MGH28$scores$G1 > 0.5 & assigned_MGH28$scores$G2M > 0.5] <- "Unknown"
 table(phase_MGH28)
 
-G1_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="G1"]
+cc_fun <- function(g1,s,g2m) { 
+  }
+
+G1_MGH28 <- apply(iasva.sv_MGH28,2,[phase_MGH28=="G1"])
 S_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="S"]
 G2M_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="G2M"]
 Unknown_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="Unknown"]
