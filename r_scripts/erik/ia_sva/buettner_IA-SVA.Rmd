@@ -57,28 +57,6 @@ normalize <- function(counts)
 }
 ```
 
-## Load the glioblastoma single cell RNA-Seq data
-```{r load_data, echo=TRUE}
-load(file = "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_data/Patel_Glioblastoma_scRNAseq_Read_Counts.rda")
-load(file= "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_data/Patel_Glioblastoma_scRNAseq_Annotations.rda")
-load(file = "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_data/Patel_Glioblastoma_scRNAseq_ENSG_ID.rda")
-ls()
-counts <- Patel_Glioblastoma_scRNAseq_Read_Counts
-anns <- Patel_Glioblastoma_scRNAseq_Annotations
-ENSG.ID <- Patel_Glioblastoma_scRNAseq_ENSG_ID
-dim(anns)
-dim(counts)
-length(ENSG.ID)
-
-summary(anns)
-table(anns$patient_id, anns$subtype)
-ContCoef(table(anns$patient_id, anns$subtype))
-```
-
-The annotations describing the glioblastoma samples and experimental
-settings are stored in "anns" and the read counts information
-is stored in "counts".
-
 ## Load the Buettner single cell RNA-Seq data
 ```{r load_data, echo=TRUE}
 buettner.data <- readRDS("/Users/erikh/Desktop/git/scrna-cell-cycle/embryonic_data/EMTAB2805.rds")
@@ -101,29 +79,6 @@ head(M)
 dim(buet_exprs)
 ```
 
-## Extract glioblastoma cells from Patient MGH30 
-We use read counts of glioblastoma cells from Patient MGH30 (n = 74).   
-```{r MGH30_cells, echo=TRUE, results='asis'}
-counts <- counts[, (anns$patient_id=="MGH30")] 
-anns <- subset(anns, (patient_id=="MGH30"))
-dim(counts)
-dim(anns)
-anns <- droplevels(anns)
-prop.zeros <- sum(counts==0)/length(counts)
-prop.zeros
-# filter out genes that are sparsely and lowly expressed in both data sets
-filter = apply(counts, 1, function(x) length(x[x>5])>=3)
-counts = counts[filter,]
-dim(counts)
-ENSG.ID <- ENSG.ID[filter]
-length(ENSG.ID)
-prop.zeros <- sum(counts==0)/length(counts)
-prop.zeros
-Subtype <- anns$subtype
-Patient_ID <- anns$patient_id
-mito.genes <- grep(pattern = "^MT-", x = rownames(x = counts), value = TRUE)
-Percent_Mito <- colSums(counts[mito.genes, ])/colSums(counts)
-```
 ## Filter out clearly low quality cells from Buettner data
 
 Clearly some outlier cells on negative PC1 with low number of genes with pca using full dataset.
@@ -143,24 +98,7 @@ dim(buet_exprs)
 
 ```
 
-
-## Normalization using SCnorm for Glioblastoma
-```{r normalization, fig.width=8, fig.height=6}
-## count-depth relationship for all genes
-Conditions = rep(c(1), each=74)
-countDeptEst <- plotCountDepth(Data = counts, Conditions = Conditions,
-                               FilterCellProportion = .1, NCores=4)
-
-DataNorm <- SCnorm(Data = counts, Conditions = Conditions,
-                   PrintProgressPlots = FALSE,
-                   FilterCellNum = 10,
-                   NCores=4)
-counts <- SingleCellExperiment::normcounts(DataNorm)
-summary(colSums(counts))
-dim(counts)
-```
-
-## Normalization using SCnorm for Buettner data
+## Normalization for Buettner data
 ```{r normalization, fig.width=8, fig.height=6}
 ## count-depth relationship for all genes
 norm_buet <- SingleCellExperiment(assays=list(counts = buet_exprs, logcounts = log2(buet_exprs+1)))
@@ -176,15 +114,15 @@ Frequently, the first principal component of log-transformed scRNA-Seq read coun
 with the number of detected genes (e.g., r > 0.9). Here, we calculate the number of detected genes 
 for glioblastoma cells, which will be used as an known factor in the IA-SVA analyses. 
 ```{r num_detected_genes, echo=TRUE, fig.width=7, fig.height=4}
-Num_Detected_Genes <- colSums(counts>0)
-Geo_Lib <- colSums(log(counts+1))
-summary(Geo_Lib)
-barplot(Geo_Lib, xlab="Cell", las=2, ylab = "Geometric library size")
-lcounts <- log(counts + 1)
+Num_Detected_Genes_buet <- colSums(buet_exprs>0)
+Geo_Lib_buet <- colSums(log(buet_exprs+1))
+summary(Geo_Lib_buet)
+barplot(Geo_Lib_buet, xlab="Cell", las=2, ylab = "Geometric library size")
+lcounts_buet <- log(buet_exprs + 1)
 # PC1 and Geometric library size correlation
-pc1 = irlba(lcounts - rowMeans(lcounts), 1)$v[,1] ## partial SVD
-cor(Num_Detected_Genes, pc1)
-cor(Geo_Lib, pc1)
+pc1_buet = irlba(lcounts_buet - rowMeans(lcounts_buet), 1)$v[,1] ## partial SVD
+cor(Num_Detected_Genes_buet, pc1_buet)
+cor(Geo_Lib_buet, pc1_buet)
 ```
 
 ## Run IA-SVA
@@ -192,25 +130,25 @@ Here, we run IA-SVA using Geo_Lib_Size as a known factor and identify five hidde
 SVs are plotted in a pairwise fashion to uncover which SVs can seperate cells. 
 ```{r run_iasva, echo=TRUE, fig.width= 7, fig.height=6}
 set.seed(3445)
-mod <- model.matrix(~Geo_Lib)
-summ_exp <- SummarizedExperiment(assays = counts)
-iasva.res<- iasva(summ_exp, as.matrix(mod[,-1]),verbose=FALSE, permute=FALSE, num.sv=5)
-iasva.sv <- iasva.res$sv
+mod_buet <- model.matrix(~Geo_Lib_buet)
+summ_exp_buet <- SummarizedExperiment(assays = buet_exprs)
+iasva.res_buet <- iasva(summ_exp_buet, as.matrix(mod_buet[,-1]),verbose=FALSE, permute=FALSE, num.sv=7)
+iasva.sv_buet <- iasva.res_buet$sv
 
-Cluster <- as.factor(iasva.sv[,1] < 0.1) 
-levels(Cluster)=c("Cluster1","Cluster2")
-table(Cluster)
+Cluster_buet <- as.factor(iasva.sv_buet[,1] < 0.1) 
+levels(Cluster_buet)=c("Cluster1","Cluster2")
+table(Cluster_buet)
 
-pairs(iasva.sv[,1:5], main="IA-SVA", pch=21, col=color.vec[Cluster],
-      bg=color.vec[Cluster], oma=c(4,4,6,14))
-legend("right", levels(Cluster), fill=color.vec, bty="n")
+pairs(iasva.sv_buet[,1:7], main="IA-SVA", pch=21, col=color.vec[Cluster_buet],
+      bg=color.vec[Cluster_buet], oma=c(4,4,6,14))
+legend("right", levels(Cluster_buet), fill=color.vec, bty="n")
 
-plot(iasva.sv[,1:2], main="IA-SVA", pch=21, xlab="SV1", ylab="SV2",
-     col=color.vec[Cluster], bg=color.vec[Cluster])
+plot(iasva.sv_buet[,1:2], main="IA-SVA", pch=21, xlab="SV1", ylab="SV2",
+     col=color.vec[Cluster_buet], bg=color.vec[Cluster_buet])
 
-cor(Num_Detected_Genes, iasva.sv[,1])
-cor(Geo_Lib, iasva.sv[,1])
-corrplot(cor(iasva.sv))
+cor(Num_Detected_Genes_buet, iasva.sv_buet[,1])
+cor(Geo_Lib_buet, iasva.sv_buet[,1])
+corrplot(cor(iasva.sv_buet))
 ```
 
 ## Find marker genes for the detected heterogeneity (SV1).
@@ -219,40 +157,40 @@ associated with SV1 (multiple testing adjusted p-value < 0.05,
 default significance cutoff, and R-squared value > 0.3).  
 ```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
 # try different R2 thresholds
-pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/Clustering_analyses_figure3_sv1.pdf"))
-r2.results <- study_R2(summ_exp, iasva.sv,selected.svs=1, no.clusters=2)
+pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/Clustering_analyses_figure3_sv7_buet.pdf"))
+r2.results_buet <- study_R2(summ_exp_buet, iasva.sv_buet,selected.svs=7, no.clusters=2)
 dev.off()
 
-marker.counts.SV1 <- find_markers(summ_exp, 
-                            as.matrix(iasva.sv[,c(1)]), rsq.cutoff = 0.4)
-marker.counts.SV1.long <- find_markers(summ_exp, 
-                              as.matrix(iasva.sv[,c(1)]), rsq.cutoff = 0.3)
-nrow(marker.counts.SV1) 
-nrow(marker.counts.SV1.long)
+marker.counts.SV7_buet <- find_markers(summ_exp_buet, 
+                            as.matrix(iasva.sv_buet[,c(7)]), rsq.cutoff = 0.4)
+marker.counts.SV7.long_buet <- find_markers(summ_exp_buet, 
+                              as.matrix(iasva.sv_buet[,c(7)]), rsq.cutoff = 0.3)
+nrow(marker.counts.SV7_buet) 
+nrow(marker.counts.SV7.long_buet)
 
-anno.col2 <- data.frame(Cluster=Cluster, SV1=iasva.sv[,1])
-rownames(anno.col2) <- colnames(marker.counts.SV1)
-head(anno.col2)
+anno.col2_buet <- data.frame(Cluster=Cluster_buet, SV7=iasva.sv_buet[,7])
+rownames(anno.col2_buet) <- colnames(marker.counts.SV7_buet)
+head(anno.col2_buet)
 
-cluster.col <- color.vec[1:2]
-names(cluster.col) <- as.vector(levels(Cluster))
-anno.colors <- list(Cluster=cluster.col)
-anno.colors
+cluster.col_buet <- color.vec[1:7]
+names(cluster.col_buet) <- as.vector(levels(Cluster_buet))
+anno.colors_buet <- list(Cluster=cluster.col_buet)
+anno.colors_buet
 
-pheatmap(log(marker.counts.SV1+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2,
-         annotation_colors = anno.colors)
+pheatmap(log(marker.counts.SV7_buet+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_buet,
+         annotation_colors = anno.colors_buet)
 
-pheatmap(log(marker.counts.SV1.long+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2,
-         annotation_colors = anno.colors)
+pheatmap(log(marker.counts.SV7.long_buet+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_buet,
+         annotation_colors = anno.colors_buet)
 
-gene.list <- rownames(marker.counts.SV1)
-write.table(gene.list, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/CC_genes.short.txt"),
+gene.list_buet <- rownames(marker.counts.SV7_buet)
+write.table(gene.list_buet, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_buet.txt"),
             col.names =F, row.names = F, quote = F)
 
-gene.list <- rownames(marker.counts.SV1.long)
-write.table(gene.list, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/CC_genes.long.txt"),
+gene.list.long_buet <- rownames(marker.counts.SV7.long_buet)
+write.table(gene.list.long_buet, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_buet.txt"),
             col.names =F, row.names = F, quote = F)
 
 ```
@@ -262,28 +200,30 @@ https://doi.org/10.1101/151217)
 
 ## Cell type assignment using scran R package
 ```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
-ENSG.counts <- counts
-rownames(ENSG.counts) <- ENSG.ID
-sce <- SingleCellExperiment(list(counts=ENSG.counts))
+mmu.pairs <- readRDS(system.file("exdata", 
+                                "mouse_cycle_markers.rds", package="scran"))
+assigned_buet <- cyclone(norm_buet, pairs=mmu.pairs)
+head(assigned_buet$scores)
+table(assigned_buet$phases)
+phase_buet <- rep("S", ncol(norm_buet))
+phase_buet[assigned_buet$scores$G1 > 0.5 & assigned_buet$scores$G2M < 0.5] <- "G1"
+phase_buet[assigned_buet$scores$G1 < 0.5 & assigned_buet$scores$G2M > 0.5] <- "G2M"
+phase_buet[assigned_buet$scores$G1 < 0.5 & assigned_buet$scores$G2M < 0.5] <- "S"
+phase_buet[assigned_buet$scores$G1 > 0.5 & assigned_buet$scores$G2M > 0.5] <- "Unknown"
+table(phase_buet)
 
-# load human cell cycle markers
-hs.pairs <- readRDS(system.file("exdata", 
-                                "human_cycle_markers.rds", package="scran"))
-assigned <- cyclone(sce, pairs=hs.pairs)
-head(assigned$scores)
-table(assigned$phases)
-phase <- rep("S", ncol(sce))
-phase[assigned$scores$G1 > 0.5 & assigned$scores$G2M < 0.5] <- "G1"
-phase[assigned$scores$G1 < 0.5 & assigned$scores$G2M > 0.5] <- "G2M"
-phase[assigned$scores$G1 < 0.5 & assigned$scores$G2M < 0.5] <- "S"
-phase[assigned$scores$G1 > 0.5 & assigned$scores$G2M > 0.5] <- "Unknown"
-table(phase)
-
-G1 <- iasva.sv[,1][phase=="G1"]
-S <- iasva.sv[,1][phase=="S"]
-G2M <- iasva.sv[,1][phase=="G2M"]
-Unknown <- iasva.sv[,1][phase=="Unknown"]
-vioplot(G1, S, G2M, Unknown, names=c("G1", "S", "G2M", "Unknown"), 
+G1_buet_SV7 <- iasva.sv_buet[,7][phase_buet=="G1"]
+S_buet_SV7 <- iasva.sv_buet[,7][phase_buet=="S"]
+G2M_buet_SV7 <- iasva.sv_buet[,7][phase_buet=="G2M"]
+Unknown_buet_SV7 <- iasva.sv_buet[,7][phase_buet=="Unknown"]
+vioplot(G1_buet_SV7, S_buet_SV7, G2M_buet_SV7, names=c("G1", "S", "G2M"), 
+   col="gold")
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV7)")
+G1_buet_SV1 <- iasva.sv_buet[,1][phase_buet=="G1"]
+S_buet_SV1 <- iasva.sv_buet[,1][phase_buet=="S"]
+G2M_buet_SV1 <- iasva.sv_buet[,1][phase_buet=="G2M"]
+Unknown_buet_SV1 <- iasva.sv_buet[,1][phase_buet=="Unknown"]
+vioplot(G1_buet_SV1, S_buet_SV1, G2M_buet_SV1, names=c("G1", "S", "G2M"), 
    col="gold")
 title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV1)")
 ```
