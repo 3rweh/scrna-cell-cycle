@@ -14,9 +14,9 @@ Script for calculating RMSE for cyclone and seurat compared to the annotation da
 
 ```{r data}
 # read files as tables, actual is the annotated data
-actual_buttner <- read.table("/Users/Lovisa Lundeberg/Documents/scrna-cell-cycle/r_scripts/lovisa/actual.txt", header = FALSE, sep = "", dec = ".")
-predicted_cyclone_buttner <- read.table("/Users/Lovisa Lundeberg/Documents/scrna-cell-cycle/r_scripts/lovisa/predicted_cyclone.txt", header = FALSE, sep = "", dec = ".")
-predicted_seurat_buttner <- read.table("/Users/Lovisa Lundeberg/Documents/scrna-cell-cycle/r_scripts/lovisa/predicted_seurat.txt", header = FALSE, sep = "", dec = ".")
+actual_buttner <- read.table("/Users/Lovisa Lundeberg/Documents/scrna-cell-cycle/r_scripts/lovisa/txtfiles/actual.txt", header = FALSE, sep = "", dec = ".")
+predicted_cyclone_buttner <- read.table("/Users/Lovisa Lundeberg/Documents/scrna-cell-cycle/r_scripts/lovisa/txtfiles/predicted_cyclone.txt", header = FALSE, sep = "", dec = ".")
+predicted_seurat_buttner <- read.table("/Users/Lovisa Lundeberg/Documents/scrna-cell-cycle/r_scripts/lovisa/txtfiles/predicted_seurat.txt", header = FALSE, sep = "", dec = ".")
 
 # saving the data from the files as vectors
 actual_buttner <- as.vector(unlist(lapply(c(actual_buttner), as.numeric)))
@@ -40,13 +40,19 @@ RMSE_seu_bu <- RMSE(predicted_seurat_buttner,actual_buttner)
 # calculating RMSE for seurat using the data from Leng et al.
 actual_leng <- c(91, 76, 80) #taken from article
 seurat_leng <- c(26, 134, 87)
+cyclone_leng <- c(91, 70, 86)
+
+RMSE_cyc_le <- RMSE(cyclone_leng, actual_leng)
+RMSE_cyc <- c(RMSE_cyc_bu, RMSE_cyc_le)
 
 RMSE_seu_le <- RMSE(seurat_leng,actual_leng)
-
 RMSE_seu <- c(RMSE_seu_bu,RMSE_seu_le)
 ```
 
 ```{r plot}
 barplot(RMSE_seu, main = "Seurat", xlab ="Data", ylab="RMSE", names.arg=c("Buttner et al.","Leng et al."), border="blue", density=c(10), col=c("purple","purple"))
+
+
+barplot(RMSE_cyc, main = "Cyclone", xlab ="Data", ylab="RMSE", names.arg=c("Buttner et al.","Leng et al."), border="blue", density=c(10), col=c("purple","purple"))
 
 ```

@@ -1,0 +1,55 @@
+---
+title: "sasagawa"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Script for running Sasagawa et al data on Cyclone and Seurat
+
+
+
+```{r data}
+mypath = "/Users/Lovisa Lundeberg/Documents/scrna-cell-cycle/r_scripts/lovisa/embryonic_data/sasagawa"
+setwd(mypath)
+
+# reading in the separate text files and putting them next to each other in a data frame
+txt_files_ls = list.files(path=mypath, pattern="*.txt")
+txt_files_df <- lapply(txt_files_ls, function(x) {read.table(file = x, header = T, sep ="")})
+exprs_sa <- do.call("cbind", lapply(txt_files_df, as.data.frame))
+
+id <- as.data.frame(exprs_sa[,1:2])
+
+exprs_sa <- exprs_sa[ ,-which(names(exprs_sa) %in% c("id", "gene.symbol"))]
+
+rownames(exprs_sa) <- paste(id[,1]) 
+exprs_sa <- cbind(hgnc_symbol=id[,2],exprs_sa)
+
+
+```
+
+
+```{r filter}
+# filter out cells with low nDet
+nDet <- colSums(exprs_sa[,-1]>1)
+hist(nDet,n=100)
+keep <- which(nDet>4000)
+
+exprs_sa<-exprs_sa[,keep]
+```
+
+```{r cyclone, warning=F}
+#adding ensembl ids as rownames
+#exprs_id <- exprs_an[,-1]
+#rownames(exprs_id) <- paste(exprs_an[,1]) 
+
+exprs_sa_cyc <- data.matrix(exprs_sa[,-1])
+mmu.pairs <- readRDS(system.file("exdata", "mouse_cycle_markers.rds", package="scran"))
+
+set.seed(123)
+sce_leng <- SingleCellExperiment(assays=list(counts = exprs_sa_cyc, logcounts = log2(exprs_sa_cyc+1)))
+cc <- cyclone(sce_leng, pairs=mmu.pairs)
+table(cc$phase)
+```
