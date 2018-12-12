@@ -61,6 +61,7 @@ keep <- which(nDet>4000)
 
 exprs<-exprs[,keep]
 M <- M[keep,]
+dim(exprs)
 
 ```
 
@@ -86,7 +87,7 @@ nS <- length(cc$phase)
 o <- overlap_phyper2(split(1:nS,cc$phase),split(1:nS,M$cell_cycle_stage),plot=T)
 ```
 
-Rows are the cyclone predictions, columns are the assigned phase from sorting.  
+Rows are the cyclone predictions,columns are the assigned phase from sorting.  
 
 Predictions have slightly more G1 compared to their assignment, and not all cells are consistent.
 

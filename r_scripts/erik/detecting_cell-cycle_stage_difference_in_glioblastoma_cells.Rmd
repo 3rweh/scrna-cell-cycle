@@ -59,9 +59,9 @@ normalize <- function(counts)
 
 ## Load the glioblastoma single cell RNA-Seq data
 ```{r load_data, echo=TRUE}
-load(file = "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_data/Patel_Glioblastoma_scRNAseq_Read_Counts.rda")
-load(file= "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_data/Patel_Glioblastoma_scRNAseq_Annotations.rda")
-load(file = "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_data/Patel_Glioblastoma_scRNAseq_ENSG_ID.rda")
+load(file = "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_data/Patel_Glioblastoma_scRNAseq_Read_Counts.rda")
+load(file= "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_data/Patel_Glioblastoma_scRNAseq_Annotations.rda")
+load(file = "/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_data/Patel_Glioblastoma_scRNAseq_ENSG_ID.rda")
 ls()
 counts <- Patel_Glioblastoma_scRNAseq_Read_Counts
 anns <- Patel_Glioblastoma_scRNAseq_Annotations
@@ -79,46 +79,205 @@ The annotations describing the glioblastoma samples and experimental
 settings are stored in "anns" and the read counts information
 is stored in "counts".
 
+## Extract glioblastoma cells from Patient MGH26 
+We use read counts of glioblastoma cells from Patient MGH26 (n = 118).   
+```{r MGH26_cells, echo=TRUE, results='asis'}
+counts_MGH26 <- counts[, (anns$patient_id=="MGH26")] 
+anns_MGH26 <- subset(anns, (patient_id=="MGH26"))
+dim(counts_MGH26)
+dim(anns_MGH26)
+anns_MGH26 <- droplevels(anns_MGH26)
+prop.zeros_MGH26 <- sum(counts_MGH26==0)/length(counts_MGH26)
+prop.zeros_MGH26
+# filter out genes that are sparsely and lowly expressed
+filter_MGH26 = apply(counts_MGH26, 1, function(x) length(x[x>5])>=3)
+counts_MGH26 = counts_MGH26[filter_MGH26,]
+dim(counts_MGH26)
+ENSG.ID_MGH26 <- ENSG.ID[filter_MGH26]
+length(ENSG.ID_MGH26)
+prop.zeros_MGH26 <- sum(counts_MGH26==0)/length(counts_MGH26)
+prop.zeros_MGH26
+Subtype_MGH26 <- anns_MGH26$subtype
+Patient_ID_MGH26 <- anns_MGH26$patient_id
+mito.genes_MGH26 <- grep(pattern = "^MT-", x = rownames(x = counts_MGH26), value = TRUE)
+Percent_Mito_MGH26 <- colSums(counts_MGH26[mito.genes_MGH26, ])/colSums(counts_MGH26)
+```
+
+## Extract glioblastoma cells from Patient MGH28 
+We use read counts of glioblastoma cells from Patient MGH28 (n = 95).   
+```{r MGH28_cells, echo=TRUE, results='asis'}
+counts_MGH28 <- counts[, (anns$patient_id=="MGH28")] 
+anns_MGH28 <- subset(anns, (patient_id=="MGH28"))
+dim(counts_MGH28)
+dim(anns_MGH28)
+anns_MGH28 <- droplevels(anns_MGH28)
+prop.zeros_MGH28 <- sum(counts_MGH28==0)/length(counts_MGH28)
+prop.zeros_MGH28
+# filter out genes that are sparsely and lowly expressed
+filter_MGH28 = apply(counts_MGH28, 1, function(x) length(x[x>5])>=3)
+counts_MGH28 = counts_MGH28[filter_MGH28,]
+dim(counts_MGH28)
+ENSG.ID_MGH28 <- ENSG.ID[filter_MGH28]
+length(ENSG.ID_MGH28)
+prop.zeros_MGH28 <- sum(counts_MGH28==0)/length(counts_MGH28)
+prop.zeros_MGH28
+Subtype_MGH28 <- anns_MGH28$subtype
+Patient_ID_MGH28 <- anns_MGH28$patient_id
+mito.genes_MGH28 <- grep(pattern = "^MT-", x = rownames(x = counts_MGH28), value = TRUE)
+Percent_Mito_MGH28 <- colSums(counts_MGH28[mito.genes_MGH28, ])/colSums(counts_MGH28)
+```
+
+## Extract glioblastoma cells from Patient MGH29 
+We use read counts of glioblastoma cells from Patient MGH29 (n = 76).   
+```{r MGH28_cells, echo=TRUE, results='asis'}
+counts_MGH29 <- counts[, (anns$patient_id=="MGH29")] 
+anns_MGH29 <- subset(anns, (patient_id=="MGH29"))
+dim(counts_MGH29)
+dim(anns_MGH29)
+anns_MGH29 <- droplevels(anns_MGH29)
+prop.zeros_MGH29 <- sum(counts_MGH29==0)/length(counts_MGH29)
+prop.zeros_MGH29
+# filter out genes that are sparsely and lowly expressed
+filter_MGH29 = apply(counts_MGH29, 1, function(x) length(x[x>5])>=3)
+counts_MGH29 = counts_MGH29[filter_MGH29,]
+dim(counts_MGH29)
+ENSG.ID_MGH29 <- ENSG.ID[filter_MGH29]
+length(ENSG.ID_MGH29)
+prop.zeros_MGH29 <- sum(counts_MGH29==0)/length(counts_MGH29)
+prop.zeros_MGH29
+Subtype_MGH29 <- anns_MGH29$subtype
+Patient_ID_MGH29 <- anns_MGH29$patient_id
+mito.genes_MGH29 <- grep(pattern = "^MT-", x = rownames(x = counts_MGH29), value = TRUE)
+Percent_Mito_MGH29 <- colSums(counts_MGH29[mito.genes_MGH29, ])/colSums(counts_MGH29)
+```
+
 ## Extract glioblastoma cells from Patient MGH30 
 We use read counts of glioblastoma cells from Patient MGH30 (n = 74).   
 ```{r MGH30_cells, echo=TRUE, results='asis'}
-counts <- counts[, (anns$patient_id=="MGH30")] 
-anns <- subset(anns, (patient_id=="MGH30"))
-dim(counts)
-dim(anns)
-anns <- droplevels(anns)
-prop.zeros <- sum(counts==0)/length(counts)
-prop.zeros
+counts_MGH30 <- counts[, (anns$patient_id=="MGH30")] 
+anns_MGH30 <- subset(anns, (patient_id=="MGH30"))
+dim(counts_MGH30)
+dim(anns_MGH30)
+anns_MGH30 <- droplevels(anns_MGH30)
+prop.zeros_MGH30 <- sum(counts_MGH30==0)/length(counts_MGH30)
+prop.zeros_MGH30
 # filter out genes that are sparsely and lowly expressed
-filter = apply(counts, 1, function(x) length(x[x>5])>=3)
-counts = counts[filter,]
-dim(counts)
-ENSG.ID <- ENSG.ID[filter]
-length(ENSG.ID)
-prop.zeros <- sum(counts==0)/length(counts)
-prop.zeros
-Subtype <- anns$subtype
-Patient_ID <- anns$patient_id
-mito.genes <- grep(pattern = "^MT-", x = rownames(x = counts), value = TRUE)
-Percent_Mito <- colSums(counts[mito.genes, ])/colSums(counts)
+filter_MGH30 = apply(counts_MGH30, 1, function(x) length(x[x>5])>=3)
+counts_MGH30 = counts_MGH30[filter_MGH30,]
+dim(counts_MGH30)
+ENSG.ID_MGH30 <- ENSG.ID[filter_MGH30]
+length(ENSG.ID_MGH30)
+prop.zeros_MGH30 <- sum(counts_MGH30==0)/length(counts_MGH30)
+prop.zeros_MGH30
+Subtype_MGH30 <- anns_MGH30$subtype
+Patient_ID_MGH30 <- anns_MGH30$patient_id
+mito.genes_MGH30 <- grep(pattern = "^MT-", x = rownames(x = counts_MGH30), value = TRUE)
+Percent_Mito_MGH30 <- colSums(counts_MGH30[mito.genes_MGH30, ])/colSums(counts_MGH30)
 ```
 
-## Normalization using SCnorm
+## Extract glioblastoma cells from Patient MGH31 
+We use read counts of glioblastoma cells from Patient MGH31 (n = 71).   
+```{r MGH31_cells, echo=TRUE, results='asis'}
+counts_MGH31 <- counts[, (anns$patient_id=="MGH31")] 
+anns_MGH31 <- subset(anns, (patient_id=="MGH31"))
+dim(counts_MGH31)
+dim(anns_MGH31)
+anns_MGH31 <- droplevels(anns_MGH31)
+prop.zeros_MGH31 <- sum(counts_MGH31==0)/length(counts_MGH31)
+prop.zeros_MGH31
+# filter out genes that are sparsely and lowly expressed
+filter_MGH31 = apply(counts_MGH31, 1, function(x) length(x[x>5])>=3)
+counts_MGH31 = counts_MGH31[filter_MGH31,]
+dim(counts_MGH31)
+ENSG.ID_MGH31 <- ENSG.ID[filter_MGH31]
+length(ENSG.ID_MGH31)
+prop.zeros_MGH31 <- sum(counts_MGH31==0)/length(counts_MGH31)
+prop.zeros_MGH31
+Subtype_MGH31 <- anns_MGH31$subtype
+Patient_ID_MGH31 <- anns_MGH31$patient_id
+mito.genes_MGH31 <- grep(pattern = "^MT-", x = rownames(x = counts_MGH31), value = TRUE)
+Percent_Mito_MGH31 <- colSums(counts_MGH31[mito.genes_MGH31, ])/colSums(counts_MGH31)
+```
+
+## Normalization on patient MGH26 data using SCnorm
+```{r normalization, fig.width=8, fig.height=6}
+## count-depth relationship for all genes
+Conditions = rep(c(1), each=118)
+countDeptEst_MGH26 <- plotCountDepth(Data = counts_MGH26, Conditions = Conditions,
+                               FilterCellProportion = .1, NCores=4)
+
+DataNorm_MGH26 <- SCnorm(Data = counts_MGH26, Conditions = Conditions,
+                   PrintProgressPlots = FALSE,
+                   FilterCellNum = 10,
+                   NCores=4)
+counts_MGH26 <- SingleCellExperiment::normcounts(DataNorm_MGH26)
+summary(colSums(counts_MGH26))
+dim(counts_MGH26)
+```
+
+## Normalization on patient MGH28 data using SCnorm
+```{r normalization, fig.width=8, fig.height=6}
+## count-depth relationship for all genes
+Conditions = rep(c(1), each=95)
+countDeptEst_MGH28 <- plotCountDepth(Data = counts_MGH28, Conditions = Conditions,
+                               FilterCellProportion = .1, NCores=4)
+
+DataNorm_MGH28 <- SCnorm(Data = counts_MGH28, Conditions = Conditions,
+                   PrintProgressPlots = FALSE,
+                   FilterCellNum = 10,
+                   NCores=4)
+counts_MGH28 <- SingleCellExperiment::normcounts(DataNorm_MGH28)
+summary(colSums(counts_MGH28))
+dim(counts_MGH28)
+```
+
+## Normalization on patient MGH29 data using SCnorm
+```{r normalization, fig.width=8, fig.height=6}
+## count-depth relationship for all genes
+Conditions = rep(c(1), each=76)
+countDeptEst_MGH29 <- plotCountDepth(Data = counts_MGH29, Conditions = Conditions,
+                               FilterCellProportion = .1, NCores=4)
+
+DataNorm_MGH29 <- SCnorm(Data = counts_MGH29, Conditions = Conditions,
+                   PrintProgressPlots = FALSE,
+                   FilterCellNum = 10,
+                   NCores=4)
+counts_MGH29 <- SingleCellExperiment::normcounts(DataNorm_MGH29)
+summary(colSums(counts_MGH29))
+dim(counts_MGH29)
+```
+
+## Normalization on patient MGH30 data using SCnorm
 ```{r normalization, fig.width=8, fig.height=6}
 ## count-depth relationship for all genes
 Conditions = rep(c(1), each=74)
-countDeptEst <- plotCountDepth(Data = counts, Conditions = Conditions,
+countDeptEst_MGH30 <- plotCountDepth(Data = counts_MGH30, Conditions = Conditions,
                                FilterCellProportion = .1, NCores=4)
 
-DataNorm <- SCnorm(Data = counts, Conditions = Conditions,
+DataNorm_MGH30 <- SCnorm(Data = counts_MGH30, Conditions = Conditions,
                    PrintProgressPlots = FALSE,
                    FilterCellNum = 10,
-                   NCores=8)
-counts <- SingleCellExperiment::normcounts(DataNorm)
-summary(colSums(counts))
-dim(counts)
+                   NCores=4)
+counts_MGH30 <- SingleCellExperiment::normcounts(DataNorm_MGH30)
+summary(colSums(counts_MGH30))
+dim(counts_MGH30)
 ```
 
+## Normalization on patient MGH31 data using SCnorm
+```{r normalization, fig.width=8, fig.height=6}
+## count-depth relationship for all genes
+Conditions = rep(c(1), each=71)
+countDeptEst_MGH31 <- plotCountDepth(Data = counts_MGH31, Conditions = Conditions,
+                               FilterCellProportion = .1, NCores=4)
+
+DataNorm_MGH31 <- SCnorm(Data = counts_MGH31, Conditions = Conditions,
+                   PrintProgressPlots = FALSE,
+                   FilterCellNum = 10,
+                   NCores=4)
+counts_MGH31 <- SingleCellExperiment::normcounts(DataNorm_MGH31)
+summary(colSums(counts_MGH31))
+dim(counts_MGH31)
+```
 
 ## Calculate the number of detected genes 
 It is well known that the number of detected genes in each cell explains
@@ -129,15 +288,56 @@ Frequently, the first principal component of log-transformed scRNA-Seq read coun
 with the number of detected genes (e.g., r > 0.9). Here, we calculate the number of detected genes 
 for glioblastoma cells, which will be used as an known factor in the IA-SVA analyses. 
 ```{r num_detected_genes, echo=TRUE, fig.width=7, fig.height=4}
-Num_Detected_Genes <- colSums(counts>0)
-Geo_Lib <- colSums(log(counts+1))
-summary(Geo_Lib)
-barplot(Geo_Lib, xlab="Cell", las=2, ylab = "Geometric library size")
-lcounts <- log(counts + 1)
+# MGH26
+Num_Detected_Genes_MGH26 <- colSums(counts_MGH26>0)
+Geo_Lib_MGH26 <- colSums(log(counts_MGH26+1))
+summary(Geo_Lib_MGH26)
+barplot(Geo_Lib_MGH26, xlab="Cell", las=2, ylab = "Geometric library size")
+lcounts_MGH26 <- log(counts_MGH26 + 1)
 # PC1 and Geometric library size correlation
-pc1 = irlba(lcounts - rowMeans(lcounts), 1)$v[,1] ## partial SVD
-cor(Num_Detected_Genes, pc1)
-cor(Geo_Lib, pc1)
+pc1_MGH26 = irlba(lcounts_MGH26 - rowMeans(lcounts_MGH26), 1)$v[,1] ## partial SVD
+cor(Num_Detected_Genes_MGH26, pc1_MGH26)
+cor(Geo_Lib_MGH26, pc1_MGH26)
+# MGH28
+Num_Detected_Genes_MGH28 <- colSums(counts_MGH28>0)
+Geo_Lib_MGH28 <- colSums(log(counts_MGH28+1))
+summary(Geo_Lib_MGH28)
+barplot(Geo_Lib_MGH28, xlab="Cell", las=2, ylab = "Geometric library size")
+lcounts_MGH28 <- log(counts_MGH28 + 1)
+# PC1 and Geometric library size correlation
+pc1_MGH28 = irlba(lcounts_MGH28 - rowMeans(lcounts_MGH28), 1)$v[,1] ## partial SVD
+cor(Num_Detected_Genes_MGH28, pc1_MGH28)
+cor(Geo_Lib_MGH28, pc1_MGH28)
+# MGH29
+Num_Detected_Genes_MGH29 <- colSums(counts_MGH29>0)
+Geo_Lib_MGH29 <- colSums(log(counts_MGH29+1))
+summary(Geo_Lib_MGH29)
+barplot(Geo_Lib_MGH29, xlab="Cell", las=2, ylab = "Geometric library size")
+lcounts_MGH29 <- log(counts_MGH29 + 1)
+# PC1 and Geometric library size correlation
+pc1_MGH29 = irlba(lcounts_MGH29 - rowMeans(lcounts_MGH29), 1)$v[,1] ## partial SVD
+cor(Num_Detected_Genes_MGH29, pc1_MGH29)
+cor(Geo_Lib_MGH29, pc1_MGH29)
+#MGH30
+Num_Detected_Genes_MGH30 <- colSums(counts_MGH30>0)
+Geo_Lib_MGH30 <- colSums(log(counts_MGH30+1))
+summary(Geo_Lib_MGH30)
+barplot(Geo_Lib_MGH30, xlab="Cell", las=2, ylab = "Geometric library size")
+lcounts_MGH30 <- log(counts_MGH30 + 1)
+# PC1 and Geometric library size correlation
+pc1_MGH30 = irlba(lcounts_MGH30 - rowMeans(lcounts_MGH30), 1)$v[,1] ## partial SVD
+cor(Num_Detected_Genes_MGH30, pc1_MGH30)
+cor(Geo_Lib_MGH30, pc1_MGH30)
+# MGH31
+Num_Detected_Genes_MGH31 <- colSums(counts_MGH31>0)
+Geo_Lib_MGH31 <- colSums(log(counts_MGH31+1))
+summary(Geo_Lib_MGH31)
+barplot(Geo_Lib_MGH31, xlab="Cell", las=2, ylab = "Geometric library size")
+lcounts_MGH31 <- log(counts_MGH31 + 1)
+# PC1 and Geometric library size correlation
+pc1_MGH31 = irlba(lcounts_MGH31 - rowMeans(lcounts_MGH31), 1)$v[,1] ## partial SVD
+cor(Num_Detected_Genes_MGH31, pc1_MGH31)
+cor(Geo_Lib_MGH31, pc1_MGH31)
 ```
 
 ## Run IA-SVA
@@ -145,25 +345,117 @@ Here, we run IA-SVA using Geo_Lib_Size as a known factor and identify five hidde
 SVs are plotted in a pairwise fashion to uncover which SVs can seperate cells. 
 ```{r run_iasva, echo=TRUE, fig.width= 7, fig.height=6}
 set.seed(3445)
-mod <- model.matrix(~Geo_Lib)
-summ_exp <- SummarizedExperiment(assays = counts)
-iasva.res<- iasva(summ_exp, as.matrix(mod[,-1]),verbose=FALSE, permute=FALSE, num.sv=5)
-iasva.sv <- iasva.res$sv
+mod_MGH26 <- model.matrix(~Geo_Lib_MGH26)
+summ_exp_MGH26 <- SummarizedExperiment(assays = counts_MGH26)
+iasva.res_MGH26 <- iasva(summ_exp_MGH26, as.matrix(mod_MGH26[,-1]),verbose=FALSE, permute=FALSE, num.sv=15)
+iasva.sv_MGH26 <- iasva.res_MGH26$sv
 
-Cluster <- as.factor(iasva.sv[,1] < 0.1) 
-levels(Cluster)=c("Cluster1","Cluster2")
-table(Cluster)
+Cluster_MGH26 <- as.factor(iasva.sv_MGH26[,1] < 0.1) 
+levels(Cluster_MGH26)=c("Cluster1","Cluster2")
+table(Cluster_MGH26)
 
-pairs(iasva.sv[,1:5], main="IA-SVA", pch=21, col=color.vec[Cluster],
-      bg=color.vec[Cluster], oma=c(4,4,6,14))
-legend("right", levels(Cluster), fill=color.vec, bty="n")
+pairs(iasva.sv_MGH26[,1:15], main="IA-SVA", pch=21, col=color.vec[Cluster_MGH26],
+      bg=color.vec[Cluster_MGH26], oma=c(4,4,6,14))
+legend("right", levels(Cluster_MGH26), fill=color.vec, bty="n")
 
-plot(iasva.sv[,1:2], main="IA-SVA", pch=21, xlab="SV1", ylab="SV2",
-     col=color.vec[Cluster], bg=color.vec[Cluster])
+plot(iasva.sv_MGH26[,4:5], main="IA-SVA", pch=21, xlab="SV4", ylab="SV5",
+     col=color.vec[Cluster_MGH26], bg=color.vec[Cluster_MGH26])
 
-cor(Num_Detected_Genes, iasva.sv[,1])
-cor(Geo_Lib, iasva.sv[,1])
-corrplot(cor(iasva.sv))
+cor(Num_Detected_Genes_MGH26, iasva.sv_MGH26[,1])
+cor(Geo_Lib_MGH26, iasva.sv_MGH26[,1])
+corrplot(cor(iasva.sv_MGH26))
+```
+
+```{r run_iasva, echo=TRUE, fig.width= 7, fig.height=6}
+set.seed(3445)
+mod_MGH28 <- model.matrix(~Geo_Lib_MGH28)
+summ_exp_MGH28 <- SummarizedExperiment(assays = counts_MGH28)
+iasva.res_MGH28 <- iasva(summ_exp_MGH28, as.matrix(mod_MGH28[,-1]),verbose=FALSE, permute=FALSE, num.sv=15)
+iasva.sv_MGH28 <- iasva.res_MGH28$sv
+
+Cluster_MGH28 <- as.factor(iasva.sv_MGH28[,1] < 0.1) 
+levels(Cluster_MGH28)=c("Cluster1","Cluster2")
+table(Cluster_MGH28)
+
+pairs(iasva.sv_MGH28[,1:15], main="IA-SVA", pch=21, col=color.vec[Cluster_MGH28],
+      bg=color.vec[Cluster_MGH28], oma=c(4,4,6,14))
+legend("right", levels(Cluster_MGH28), fill=color.vec, bty="n")
+
+plot(iasva.sv_MGH28[,6:13], main="IA-SVA", pch=21, xlab="SV1", ylab="SV2",
+     col=color.vec[Cluster_MGH28], bg=color.vec[Cluster_MGH28])
+
+cor(Num_Detected_Genes_MGH28, iasva.sv_MGH28[,1])
+cor(Geo_Lib_MGH28, iasva.sv_MGH28[,1])
+corrplot(cor(iasva.sv_MGH28))
+```
+
+```{r run_iasva, echo=TRUE, fig.width= 7, fig.height=6}
+set.seed(3445)
+mod_MGH29 <- model.matrix(~Geo_Lib_MGH29)
+summ_exp_MGH29 <- SummarizedExperiment(assays = counts_MGH29)
+iasva.res_MGH29 <- iasva(summ_exp_MGH29, as.matrix(mod_MGH29[,-1]),verbose=FALSE, permute=FALSE, num.sv=15)
+iasva.sv_MGH29 <- iasva.res_MGH29$sv
+
+Cluster_MGH29 <- as.factor(iasva.sv_MGH29[,1] < 0.1) 
+levels(Cluster_MGH29)=c("Cluster1","Cluster2")
+table(Cluster_MGH29)
+
+pairs(iasva.sv_MGH29[,1:15], main="IA-SVA", pch=21, col=color.vec[Cluster_MGH29],
+      bg=color.vec[Cluster_MGH29], oma=c(4,4,6,14))
+legend("right", levels(Cluster_MGH29), fill=color.vec, bty="n")
+
+plot(iasva.sv_MGH29[,1:2], main="IA-SVA", pch=21, xlab="SV1", ylab="SV2",
+     col=color.vec[Cluster_MGH29], bg=color.vec[Cluster_MGH29])
+
+cor(Num_Detected_Genes_MGH29, iasva.sv_MGH29[,1])
+cor(Geo_Lib_MGH29, iasva.sv_MGH29[,1])
+corrplot(cor(iasva.sv_MGH29))
+```
+
+```{r run_iasva, echo=TRUE, fig.width= 7, fig.height=6}
+set.seed(3445)
+mod_MGH30 <- model.matrix(~Geo_Lib_MGH30)
+summ_exp_MGH30 <- SummarizedExperiment(assays = counts_MGH30)
+iasva.res_MGH30 <- iasva(summ_exp_MGH30, as.matrix(mod_MGH30[,-1]),verbose=FALSE, permute=FALSE, num.sv=15)
+iasva.sv_MGH30 <- iasva.res_MGH30$sv
+
+Cluster_MGH30 <- as.factor(iasva.sv_MGH30[,1] < 0.1) 
+levels(Cluster_MGH30)=c("Cluster1","Cluster2")
+table(Cluster_MGH30)
+
+pairs(iasva.sv_MGH30[,1:15], main="IA-SVA", pch=21, col=color.vec[Cluster_MGH30],
+      bg=color.vec[Cluster_MGH30], oma=c(4,4,6,14))
+legend("right", levels(Cluster_MGH30), fill=color.vec, bty="n")
+
+plot(iasva.sv_MGH30[,1:2], main="IA-SVA", pch=21, xlab="SV1", ylab="SV2",
+     col=color.vec[Cluster_MGH30], bg=color.vec[Cluster_MGH30])
+
+cor(Num_Detected_Genes_MGH30, iasva.sv_MGH30[,1])
+cor(Geo_Lib_MGH30, iasva.sv_MGH30[,1])
+corrplot(cor(iasva.sv_MGH30))
+```
+
+```{r run_iasva, echo=TRUE, fig.width= 7, fig.height=6}
+set.seed(3445)
+mod_MGH31 <- model.matrix(~Geo_Lib_MGH31)
+summ_exp_MGH31 <- SummarizedExperiment(assays = counts_MGH31)
+iasva.res_MGH31 <- iasva(summ_exp_MGH31, as.matrix(mod_MGH31[,-1]),verbose=FALSE, permute=FALSE, num.sv=15)
+iasva.sv_MGH31 <- iasva.res_MGH31$sv
+
+Cluster_MGH31 <- as.factor(iasva.sv_MGH31[,1] < 0.1) 
+levels(Cluster_MGH31)=c("Cluster1","Cluster2")
+table(Cluster_MGH31)
+
+pairs(iasva.sv_MGH31[,1:15], main="IA-SVA", pch=21, col=color.vec[Cluster_MGH31],
+      bg=color.vec[Cluster_MGH31], oma=c(4,4,6,14))
+legend("right", levels(Cluster_MGH31), fill=color.vec, bty="n")
+
+plot(iasva.sv_MGH31[,1:2], main="IA-SVA", pch=21, xlab="SV1", ylab="SV2",
+     col=color.vec[Cluster_MGH31], bg=color.vec[Cluster_MGH31])
+
+cor(Num_Detected_Genes_MGH31, iasva.sv_MGH31[,1])
+cor(Geo_Lib_MGH31, iasva.sv_MGH31[,1])
+corrplot(cor(iasva.sv_MGH31))
 ```
 
 ## Find marker genes for the detected heterogeneity (SV1).
@@ -172,74 +464,348 @@ associated with SV1 (multiple testing adjusted p-value < 0.05,
 default significance cutoff, and R-squared value > 0.3).  
 ```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
 # try different R2 thresholds
-pdf(paste0("output/Clustering_analyses_figure3_sv1.pdf"))
-r2.results <- study_R2(summ_exp, iasva.sv,selected.svs=1, no.clusters=2)
+pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/Clustering_analyses_figure3_sv1_MGH26.pdf"))
+r2.results_MGH26 <- study_R2(summ_exp_MGH26, iasva.sv_MGH26,selected.svs=1, no.clusters=2)
 dev.off()
 
-marker.counts.SV1 <- find_markers(summ_exp, 
-                            as.matrix(iasva.sv[,c(1)]), rsq.cutoff = 0.4)
-marker.counts.SV1.long <- find_markers(summ_exp, 
-                              as.matrix(iasva.sv[,c(1)]), rsq.cutoff = 0.3)
-nrow(marker.counts.SV1) 
-nrow(marker.counts.SV1.long)
+marker.counts.SV1_MGH26 <- find_markers(summ_exp_MGH26, 
+                            as.matrix(iasva.sv_MGH26[,c(1)]), rsq.cutoff = 0.25)
+marker.counts.SV1.long_MGH26 <- find_markers(summ_exp_MGH26, 
+                              as.matrix(iasva.sv_MGH26[,c(1)]), rsq.cutoff = 0.20)
+nrow(marker.counts.SV1_MGH26) 
+nrow(marker.counts.SV1.long_MGH26)
 
-anno.col2 <- data.frame(Cluster=Cluster, SV1=iasva.sv[,1])
-rownames(anno.col2) <- colnames(marker.counts.SV1)
-head(anno.col2)
+anno.col2_MGH26 <- data.frame(Cluster=Cluster_MGH26, SV1=iasva.sv_MGH26[,1])
+rownames(anno.col2_MGH26) <- colnames(marker.counts.SV1_MGH26)
+head(anno.col2_MGH26)
 
-cluster.col <- color.vec[1:2]
-names(cluster.col) <- as.vector(levels(Cluster))
-anno.colors <- list(Cluster=cluster.col)
-anno.colors
+cluster.col_MGH26 <- color.vec[1:2]
+names(cluster.col_MGH26) <- as.vector(levels(Cluster_MGH26))
+anno.colors_MGH26 <- list(Cluster=cluster.col_MGH26)
+anno.colors_MGH26
 
-pheatmap(log(marker.counts.SV1+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2,
-         annotation_colors = anno.colors)
+pheatmap(log(marker.counts.SV1_MGH26+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_MGH26,
+         annotation_colors = anno.colors_MGH26)
 
-pheatmap(log(marker.counts.SV1.long+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2,
-         annotation_colors = anno.colors)
+pheatmap(log(marker.counts.SV1.long_MGH26+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_MGH26,
+         annotation_colors = anno.colors_MGH26)
 
-gene.list <- rownames(marker.counts.SV1)
-write.table(gene.list, file = paste0("output/CC_genes.short.txt"),
+gene.list_MGH26 <- rownames(marker.counts.SV1_MGH26)
+write.table(gene.list_MGH26, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_MGH26.txt"),
             col.names =F, row.names = F, quote = F)
 
-gene.list <- rownames(marker.counts.SV1.long)
-write.table(gene.list, file = paste0("output/CC_genes.long.txt"),
+gene.list_MGH26 <- rownames(marker.counts.SV1.long_MGH26)
+write.table(gene.list_MGH26, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_MGH26.txt"),
             col.names =F, row.names = F, quote = F)
 
 ```
+
+```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
+# try different R2 thresholds
+pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/Clustering_analyses_figure3_sv1_MGH28.pdf"))
+r2.results_MGH28 <- study_R2(summ_exp_MGH28, iasva.sv_MGH28,selected.svs=1, no.clusters=2)
+dev.off()
+
+marker.counts.SV1_MGH28 <- find_markers(summ_exp_MGH28, 
+                            as.matrix(iasva.sv_MGH28[,c(1)]), rsq.cutoff = 0.4)
+marker.counts.SV1.long_MGH28 <- find_markers(summ_exp_MGH28, 
+                              as.matrix(iasva.sv_MGH28[,c(1)]), rsq.cutoff = 0.2)
+nrow(marker.counts.SV1_MGH28) 
+nrow(marker.counts.SV1.long_MGH28)
+
+anno.col2_MGH28 <- data.frame(Cluster=Cluster_MGH28, SV1=iasva.sv_MGH28[,1])
+rownames(anno.col2_MGH28) <- colnames(marker.counts.SV1_MGH28)
+head(anno.col2_MGH28)
+
+cluster.col_MGH28 <- color.vec[1:2]
+names(cluster.col_MGH28) <- as.vector(levels(Cluster_MGH28))
+anno.colors_MGH28 <- list(Cluster=cluster.col_MGH28)
+anno.colors_MGH28
+
+pheatmap(log(marker.counts.SV1_MGH28+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_MGH28,
+         annotation_colors = anno.colors_MGH28)
+
+pheatmap(log(marker.counts.SV1.long_MGH28+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_MGH28,
+         annotation_colors = anno.colors_MGH28)
+
+gene.list_MGH28 <- rownames(marker.counts.SV1_MGH28)
+write.table(gene.list_MGH28, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_MGH28.txt"),
+            col.names =F, row.names = F, quote = F)
+
+gene.list_MGH28 <- rownames(marker.counts.SV1.long_MGH28)
+write.table(gene.list_MGH28, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_MGH28.txt"),
+            col.names =F, row.names = F, quote = F)
+
+```
+
+```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
+# try different R2 thresholds
+pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/Clustering_analyses_figure3_sv1_MGH29.pdf"))
+r2.results_MGH29 <- study_R2(summ_exp_MGH29, iasva.sv_MGH29,selected.svs=1, no.clusters=2)
+dev.off()
+
+marker.counts.SV1_MGH29 <- find_markers(summ_exp_MGH29, 
+                            as.matrix(iasva.sv_MGH29[,c(1)]), rsq.cutoff = 0.35)
+marker.counts.SV1.long_MGH29 <- find_markers(summ_exp_MGH29, 
+                              as.matrix(iasva.sv_MGH29[,c(1)]), rsq.cutoff = 0.25)
+nrow(marker.counts.SV1_MGH29) 
+nrow(marker.counts.SV1.long_MGH29)
+
+anno.col2_MGH29 <- data.frame(Cluster=Cluster_MGH29, SV1=iasva.sv_MGH29[,1])
+rownames(anno.col2_MGH29) <- colnames(marker.counts.SV1_MGH29)
+head(anno.col2_MGH29)
+
+cluster.col_MGH29 <- color.vec[1:2]
+names(cluster.col_MGH29) <- as.vector(levels(Cluster_MGH29))
+anno.colors_MGH29 <- list(Cluster=cluster.col_MGH29)
+anno.colors_MGH29
+
+pheatmap(log(marker.counts.SV1_MGH29+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_MGH29,
+         annotation_colors = anno.colors_MGH29)
+
+pheatmap(log(marker.counts.SV1.long_MGH29+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_MGH29,
+         annotation_colors = anno.colors_MGH29)
+
+gene.list_MGH29 <- rownames(marker.counts.SV1_MGH29)
+write.table(gene.list_MGH29, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_MGH29.txt"),
+            col.names =F, row.names = F, quote = F)
+
+gene.list_MGH29 <- rownames(marker.counts.SV1.long_MGH29)
+write.table(gene.list_MGH29, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_MGH29.txt"),
+            col.names =F, row.names = F, quote = F)
+
+```
+
+```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
+# try different R2 thresholds
+pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/Clustering_analyses_figure3_sv1_MGH30.pdf"))
+r2.results_MGH30 <- study_R2(summ_exp_MGH30, iasva.sv_MGH30,selected.svs=1, no.clusters=2)
+dev.off()
+
+marker.counts.SV1_MGH30 <- find_markers(summ_exp_MGH30, 
+                            as.matrix(iasva.sv_MGH30[,c(1)]), rsq.cutoff = 0.45)
+marker.counts.SV1.long_MGH30 <- find_markers(summ_exp_MGH30, 
+                              as.matrix(iasva.sv_MGH30[,c(1)]), rsq.cutoff = 0.3)
+nrow(marker.counts.SV1_MGH30) 
+nrow(marker.counts.SV1.long_MGH30)
+
+anno.col2_MGH30 <- data.frame(Cluster=Cluster_MGH30, SV1=iasva.sv_MGH30[,1])
+rownames(anno.col2_MGH30) <- colnames(marker.counts.SV1_MGH30)
+head(anno.col2_MGH30)
+
+cluster.col_MGH30 <- color.vec[1:2]
+names(cluster.col_MGH30) <- as.vector(levels(Cluster_MGH30))
+anno.colors_MGH30 <- list(Cluster=cluster.col_MGH30)
+anno.colors_MGH30
+
+pheatmap(log(marker.counts.SV1_MGH30+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_MGH30,
+         annotation_colors = anno.colors_MGH30)
+
+pheatmap(log(marker.counts.SV1.long_MGH30+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_MGH30,
+         annotation_colors = anno.colors_MGH30)
+
+gene.list_MGH30 <- rownames(marker.counts.SV1_MGH30)
+write.table(gene.list_MGH30, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_MGH30.txt"),
+            col.names =F, row.names = F, quote = F)
+
+gene.list_MGH30 <- rownames(marker.counts.SV1.long_MGH30)
+write.table(gene.list_MGH30, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_MGH30.txt"),
+            col.names =F, row.names = F, quote = F)
+
+```
+
+```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
+# try different R2 thresholds
+pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/Clustering_analyses_figure3_sv1_MGH31.pdf"))
+r2.results_MGH31 <- study_R2(summ_exp_MGH31, iasva.sv_MGH31,selected.svs=1, no.clusters=2)
+dev.off()
+
+marker.counts.SV1_MGH31 <- find_markers(summ_exp_MGH31, 
+                            as.matrix(iasva.sv_MGH31[,c(1)]), rsq.cutoff = 0.4)
+marker.counts.SV1.long_MGH31 <- find_markers(summ_exp_MGH31, 
+                              as.matrix(iasva.sv_MGH31[,c(1)]), rsq.cutoff = 0.25)
+nrow(marker.counts.SV1_MGH31) 
+nrow(marker.counts.SV1.long_MGH31)
+
+anno.col2_MGH31 <- data.frame(Cluster=Cluster_MGH31, SV1=iasva.sv_MGH31[,1])
+rownames(anno.col2_MGH31) <- colnames(marker.counts.SV1_MGH31)
+head(anno.col2_MGH31)
+
+cluster.col_MGH31 <- color.vec[1:2]
+names(cluster.col_MGH31) <- as.vector(levels(Cluster_MGH31))
+anno.colors_MGH31 <- list(Cluster=cluster.col_MGH31)
+anno.colors_MGH31
+
+pheatmap(log(marker.counts.SV1_MGH31+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_MGH31,
+         annotation_colors = anno.colors_MGH31)
+
+pheatmap(log(marker.counts.SV1.long_MGH31+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_MGH31,
+         annotation_colors = anno.colors_MGH31)
+
+gene.list_MGH31 <- rownames(marker.counts.SV1_MGH31)
+write.table(gene.list_MGH31, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_MGH31.txt"),
+            col.names =F, row.names = F, quote = F)
+
+gene.list_MGH31 <- rownames(marker.counts.SV1.long_MGH31)
+write.table(gene.list_MGH31, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_MGH31.txt"),
+            col.names =F, row.names = F, quote = F)
+
+```
+
+
 Theses marker genes are strongly enriched in cell-cycle related GO terms
 and KEGG pathways. (See Supplementary Figure 6 in
 https://doi.org/10.1101/151217)
 
 ## Cell type assignment using scran R package
 ```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
-ENSG.counts <- counts
-rownames(ENSG.counts) <- ENSG.ID
-sce <- SingleCellExperiment(list(counts=ENSG.counts))
+ENSG.counts_MGH26 <- counts_MGH26
+rownames(ENSG.counts_MGH26) <- ENSG.ID_MGH26
+sce_MGH26 <- SingleCellExperiment(list(counts=ENSG.counts_MGH26))
 
 # load human cell cycle markers
-hs.pairs <- readRDS(system.file("exdata", 
+hs.pairs_MGH26 <- readRDS(system.file("exdata", 
                                 "human_cycle_markers.rds", package="scran"))
-assigned <- cyclone(sce, pairs=hs.pairs)
-head(assigned$scores)
-table(assigned$phases)
-phase <- rep("S", ncol(sce))
-phase[assigned$scores$G1 > 0.5 & assigned$scores$G2M < 0.5] <- "G1"
-phase[assigned$scores$G1 < 0.5 & assigned$scores$G2M > 0.5] <- "G2M"
-phase[assigned$scores$G1 < 0.5 & assigned$scores$G2M < 0.5] <- "S"
-phase[assigned$scores$G1 > 0.5 & assigned$scores$G2M > 0.5] <- "Unknown"
-table(phase)
+assigned_MGH26 <- cyclone(sce_MGH26, pairs=hs.pairs_MGH26)
+head(assigned_MGH26$scores)
+table(assigned_MGH26$phases)
+phase_MGH26 <- rep("S", ncol(sce_MGH26))
+phase_MGH26[assigned_MGH26$scores$G1 > 0.5 & assigned_MGH26$scores$G2M < 0.5] <- "G1"
+phase_MGH26[assigned_MGH26$scores$G1 < 0.5 & assigned_MGH26$scores$G2M > 0.5] <- "G2M"
+phase_MGH26[assigned_MGH26$scores$G1 < 0.5 & assigned_MGH26$scores$G2M < 0.5] <- "S"
+phase_MGH26[assigned_MGH26$scores$G1 > 0.5 & assigned_MGH26$scores$G2M > 0.5] <- "Unknown"
+table(phase_MGH26)
 
-G1 <- iasva.sv[,1][phase=="G1"]
-S <- iasva.sv[,1][phase=="S"]
-G2M <- iasva.sv[,1][phase=="G2M"]
-Unknown <- iasva.sv[,1][phase=="Unknown"]
-vioplot(G1, S, G2M, Unknown, names=c("G1", "S", "G2M", "Unknown"), 
-   col="gold")
+G1_MGH26 <- iasva.sv_MGH26[,1][phase_MGH26=="G1"]
+S_MGH26 <- iasva.sv_MGH26[,1][phase_MGH26=="S"]
+G2M_MGH26 <- iasva.sv_MGH26[,1][phase_MGH26=="G2M"]
+Unknown_MGH26 <- iasva.sv_MGH26[,1][phase_MGH26=="Unknown"]
+vioplot(G1_MGH26, S_MGH26, G2M_MGH26, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
 title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV1)")
 ```
+
+```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
+ENSG.counts_MGH28 <- counts_MGH28
+rownames(ENSG.counts_MGH28) <- ENSG.ID_MGH28
+sce_MGH28 <- SingleCellExperiment(list(counts=ENSG.counts_MGH28))
+
+# load human cell cycle markers
+hs.pairs_MGH28 <- readRDS(system.file("exdata", 
+                                "human_cycle_markers.rds", package="scran"))
+assigned_MGH28 <- cyclone(sce_MGH28, pairs=hs.pairs_MGH28)
+head(assigned_MGH28$scores)
+table(assigned_MGH28$phases)
+phase_MGH28 <- rep("S", ncol(sce_MGH28))
+phase_MGH28[assigned_MGH28$scores$G1 > 0.5 & assigned_MGH28$scores$G2M < 0.5] <- "G1"
+phase_MGH28[assigned_MGH28$scores$G1 < 0.5 & assigned_MGH28$scores$G2M > 0.5] <- "G2M"
+phase_MGH28[assigned_MGH28$scores$G1 < 0.5 & assigned_MGH28$scores$G2M < 0.5] <- "S"
+phase_MGH28[assigned_MGH28$scores$G1 > 0.5 & assigned_MGH28$scores$G2M > 0.5] <- "Unknown"
+table(phase_MGH28)
+
+cc_fun <- function(g1,s,g2m) { 
+  }
+
+G1_MGH28 <- apply(iasva.sv_MGH28,2,[phase_MGH28=="G1"])
+S_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="S"]
+G2M_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="G2M"]
+Unknown_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="Unknown"]
+vioplot(G1_MGH28, S_MGH28, G2M_MGH28, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV1)")
+```
+
+```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
+ENSG.counts_MGH29 <- counts_MGH29
+rownames(ENSG.counts_MGH29) <- ENSG.ID_MGH29
+sce_MGH29 <- SingleCellExperiment(list(counts=ENSG.counts_MGH29))
+
+# load human cell cycle markers
+hs.pairs_MGH29 <- readRDS(system.file("exdata", 
+                                "human_cycle_markers.rds", package="scran"))
+assigned_MGH29 <- cyclone(sce_MGH29, pairs=hs.pairs_MGH29)
+head(assigned_MGH29$scores)
+table(assigned_MGH29$phases)
+phase_MGH29 <- rep("S", ncol(sce_MGH29))
+phase_MGH29[assigned_MGH29$scores$G1 > 0.5 & assigned_MGH29$scores$G2M < 0.5] <- "G1"
+phase_MGH29[assigned_MGH29$scores$G1 < 0.5 & assigned_MGH29$scores$G2M > 0.5] <- "G2M"
+phase_MGH29[assigned_MGH29$scores$G1 < 0.5 & assigned_MGH29$scores$G2M < 0.5] <- "S"
+phase_MGH29[assigned_MGH29$scores$G1 > 0.5 & assigned_MGH29$scores$G2M > 0.5] <- "Unknown"
+table(phase_MGH29)
+
+G1_MGH29 <- iasva.sv_MGH29[,1][phase_MGH29=="G1"]
+S_MGH29 <- iasva.sv_MGH29[,1][phase_MGH29=="S"]
+G2M_MGH29 <- iasva.sv_MGH29[,1][phase_MGH29=="G2M"]
+Unknown_MGH29 <- iasva.sv_MGH29[,1][phase_MGH29=="Unknown"]
+vioplot(G1_MGH29, S_MGH29, G2M_MGH29, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV1)")
+```
+
+```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
+ENSG.counts_MGH30 <- counts_MGH30
+rownames(ENSG.counts_MGH30) <- ENSG.ID_MGH30
+sce_MGH30 <- SingleCellExperiment(list(counts=ENSG.counts_MGH30))
+
+# load human cell cycle markers
+hs.pairs_MGH30 <- readRDS(system.file("exdata", 
+                                "human_cycle_markers.rds", package="scran"))
+assigned_MGH30 <- cyclone(sce_MGH30, pairs=hs.pairs_MGH30)
+head(assigned_MGH30$scores)
+table(assigned_MGH30$phases)
+phase_MGH30 <- rep("S", ncol(sce_MGH30))
+phase_MGH30[assigned_MGH30$scores$G1 > 0.5 & assigned_MGH30$scores$G2M < 0.5] <- "G1"
+phase_MGH30[assigned_MGH30$scores$G1 < 0.5 & assigned_MGH30$scores$G2M > 0.5] <- "G2M"
+phase_MGH30[assigned_MGH30$scores$G1 < 0.5 & assigned_MGH30$scores$G2M < 0.5] <- "S"
+phase_MGH30[assigned_MGH30$scores$G1 > 0.5 & assigned_MGH30$scores$G2M > 0.5] <- "Unknown"
+table(phase_MGH30)
+
+G1_MGH30 <- iasva.sv_MGH30[,1][phase_MGH30=="G1"]
+S_MGH30 <- iasva.sv_MGH30[,1][phase_MGH30=="S"]
+G2M_MGH30 <- iasva.sv_MGH30[,1][phase_MGH30=="G2M"]
+Unknown_MGH30 <- iasva.sv_MGH30[,1][phase_MGH30=="Unknown"]
+vioplot(G1_MGH30, S_MGH30, G2M_MGH30, Unknown_MGH30, names=c("G1", "S", "G2M", "Unknown"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV1)")
+```
+
+```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
+ENSG.counts_MGH31 <- counts_MGH31
+rownames(ENSG.counts_MGH31) <- ENSG.ID_MGH31
+sce_MGH31 <- SingleCellExperiment(list(counts=ENSG.counts_MGH31))
+
+# load human cell cycle markers
+hs.pairs_MGH31 <- readRDS(system.file("exdata", 
+                                "human_cycle_markers.rds", package="scran"))
+assigned_MGH31 <- cyclone(sce_MGH31, pairs=hs.pairs_MGH31)
+head(assigned_MGH31$scores)
+table(assigned_MGH31$phases)
+phase_MGH31 <- rep("S", ncol(sce_MGH31))
+phase_MGH31[assigned_MGH31$scores$G1 > 0.5 & assigned_MGH31$scores$G2M < 0.5] <- "G1"
+phase_MGH31[assigned_MGH31$scores$G1 < 0.5 & assigned_MGH31$scores$G2M > 0.5] <- "G2M"
+phase_MGH31[assigned_MGH31$scores$G1 < 0.5 & assigned_MGH31$scores$G2M < 0.5] <- "S"
+phase_MGH31[assigned_MGH31$scores$G1 > 0.5 & assigned_MGH31$scores$G2M > 0.5] <- "Unknown"
+table(phase_MGH31)
+
+G1_MGH31 <- iasva.sv_MGH31[,1][phase_MGH31=="G1"]
+S_MGH31 <- iasva.sv_MGH31[,1][phase_MGH31=="S"]
+G2M_MGH31 <- iasva.sv_MGH31[,1][phase_MGH31=="G2M"]
+Unknown_MGH31 <- iasva.sv_MGH31[,1][phase_MGH31=="Unknown"]
+vioplot(G1_MGH31, S_MGH31, G2M_MGH31, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV1)")
+```
+
 ## Run tSNE to detect the hidden heterogeneity.
 For comparison purposes, we applied tSNE on read counts of all genes to
 identify the hidden heterogeneity. We used the Rtsne R package
@@ -262,13 +828,13 @@ by IA-SVA when all genes are used. Same color coding is used as above.
 Here, we apply tSNE on the marker genes for SV1 obtained from IA-SVA
 ```{r run_tsne_post_iasva, echo=TRUE, fig.width=7, fig.height=7}
 set.seed(3452)
-tsne.res <- Rtsne(unique(t(log(marker.counts.SV1.long+1))),
+tsne.res_MGH31 <- Rtsne(unique(t(log(marker.counts.SV1.long_MGH31+1))),
                   dims = 2, perplexity = 20)
 
-plot(tsne.res$Y, main="IA-SVA + tSNE", xlab="tSNE Dim1",
-     ylab="tSNE Dim2", pch=21, col=color.vec[Cluster],
-     bg=color.vec[Cluster], oma=c(4,4,6,12))
-legend("topright", levels(Cluster), border="white", fill=color.vec, bty="n")
+plot(tsne.res_MGH31$Y, main="IA-SVA + tSNE", xlab="tSNE Dim1",
+     ylab="tSNE Dim2", pch=21, col=color.vec[Cluster_MGH31],
+     bg=color.vec[Cluster_MGH31], oma=c(4,4,6,12))
+legend("topright", levels(Cluster_MGH31), border="white", fill=color.vec, bty="n")
 
 ```
 
@@ -317,7 +883,7 @@ library size (the first principal component). Existing methods fail to detect
 the heterogeneity due to the orthogonality assumption.
 
 ```{r  gen_Figure3ABCDE, fig.width=5, fig.height=8}
-pdf(file=paste0("output/Patel_Glioblastoma_MGH30_CellCycle_Figure3ABCD.pdf"), width=5, height=8)
+pdf(file=paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/Patel_Glioblastoma_MGH30_CellCycle_Figure3ABCD.pdf"), width=5, height=8)
 layout(matrix(c(1,2,3,4,5,5), nrow=3, ncol=2, byrow=TRUE))
 plot(iasva.sv[,1:2], main="IA-SVA", pch=21, xlab="SV1", ylab="SV2",
      col=color.vec[Cluster], bg=color.vec[Cluster], oma=c(4,4,6,12))
@@ -350,7 +916,7 @@ pheatmap(log(marker.counts.SV1.long+1), show_colnames =FALSE,
 pheatmap(log(marker.counts.SV1.long+1), show_colnames =FALSE,
          clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2,
          annotation_colors = anno.colors,
-         filename=paste0("output/Patel_Glioblastoma_MGH30_iasva_SV1_genes_rsqcutoff0.3_pheatmap_iasvaV0.95_Figure3F.pdf"),
+         filename=paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/Patel_Glioblastoma_MGH30_iasva_SV1_genes_rsqcutoff0.3_pheatmap_iasvaV0.95_Figure3F.pdf"),
          width=6, height=16)
 
 ```
@@ -358,10 +924,10 @@ pheatmap(log(marker.counts.SV1.long+1), show_colnames =FALSE,
 
 ```{r gen_SV1_gene_list}
 write.table(as.data.frame(rownames(marker.counts.SV1)), 
-            file=paste0("output/Patel_Glioblastoma_MGH30_Cellcycle_SV1_Genes_rsqcutoff0.4.txt"),
+            file=paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/Patel_Glioblastoma_MGH30_Cellcycle_SV1_Genes_rsqcutoff0.4.txt"),
             quote=F, row.names=F, col.names=F, sep=" ")
 
 write.table(as.data.frame(rownames(marker.counts.SV1.long)), 
-            file=paste0("output/Patel_Glioblastoma_MGH30_Cellcycle_SV1_Genes_rsqcutoff0.3.txt"), 
+            file=paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/Patel_Glioblastoma_MGH30_Cellcycle_SV1_Genes_rsqcutoff0.3.txt"), 
             quote=F, row.names=F, col.names=F, sep=" ")
 ```
