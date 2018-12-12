@@ -7,5 +7,6 @@ r_scripts/erik/ia_sva/sc_data/*
 r_scripts/erik/ia_sva/sc_output/*
 r_scripts/lovisa/*.Rdata
 r_scripts/lovisa/embryonic_data/*
+r_scripts/lovisa/txtfiles/*
 r_scripts/hugo/*.Rdata
 embryonic_data/*

@@ -1,0 +1,48 @@
+---
+title: "protocol"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Protocol for evaluation of different cell cycle programs on different datasets.
+
+The script is divided into different parts. In each part a different dataset is loaded and used as input for the programs; Cyclone, Seurat, reCAT and IA-SVA. The last part of the script is an evaluation of the performance of the programs. After the datasets that we have included here there is a section where the user can insert their own dataset and run it. In order to include the custom data into the evaluation it needs to be annotated according to cell cycle beforehand. See instructions above the section to see which format needs to be used.
+
+## Buttner *et al.* data (2015)
+Section for running the Buttner data through the programs.
+
+### Load the Buttner data
+The Buttner data can be downloaded from the the conquer data base (http://imlspenticton.uzh.ch:3838/conquer/)
+
+```{r Buttner data}
+cc.data <- readRDS("embryonic_data/EMTAB2805.rds")
+
+# get tpms at gene level
+exprs <- assays(experiments(cc.data)[["gene"]])[["TPM"]]
+# remove the .1 etc from the ensembl gene name
+gname <- rownames(exprs)
+ensname <- gsub("\\.\\d+","",gname)
+rownames(exprs) <- ensname
+
+# remove spike-ins from expression table
+ercc <- grep("ERCC",rownames(exprs))
+exprs <- exprs[-ercc,]
+
+# metadata with cell cycle stage assignment
+M <- as.data.frame(colData(cc.data))
+head(M)
+
+```
+
+### Filter out cells of low quality
+
+
+```{r filter}
+
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

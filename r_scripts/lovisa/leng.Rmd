@@ -1,0 +1,142 @@
+---
+title: "mod_lengetal"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Script for modifing data from Leng et al. and running it with Cyclone and Seurat
+
+Script reads in the whole matrix of data from Leng et al and only saves the cells (columns) that are annotated according to cell cycle phase. (G1=91, S=80, G2M=76)
+
+The matrix can be downloaded from this link https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE64016. 
+
+```{r load, warning=FALSE}
+
+suppressPackageStartupMessages(library(SummarizedExperiment))
+suppressPackageStartupMessages(library(MultiAssayExperiment))
+
+suppressPackageStartupMessages(library(plotrix))
+suppressPackageStartupMessages(library(Seurat))
+suppressPackageStartupMessages(library(scran))
+suppressPackageStartupMessages(library(gridExtra))
+
+```
+
+This needs to be run in order to run Seurat to get the gene pairs
+```{r convert_names}
+savefile = "seurat_cc_genes_mouse.Rdata"
+if (file.exists(savefile)){
+  load(savefile)
+}else{
+
+# Load human ensembl attributes
+human = biomaRt::useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+# Load mouse ensembl attributes
+mouse = biomaRt::useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+
+hsa2mmEnsembl <- function(x,mouse,human){
+  # Link both datasets and retrieve mouse genes from the human genes
+  genes.list = biomaRt::getLDS(attributes = c("hgnc_symbol"), filters = "hgnc_symbol", values = x , mart = human, attributesL = c("mgi_symbol","ensembl_gene_id"), martL = mouse, uniqueRows = T)
+  # Get unique names of genes 
+  mouse.gene.list <- unique(genes.list[, 3])
+  return(mouse.gene.list)
+}
+
+# load data from Seurat package
+data(cc.genes)
+# convert to mouse ensembl IDs
+cc.genes.mouse <- lapply(cc.genes, hsa2mmEnsembl, mouse,human)
+save(cc.genes.mouse, file=savefile)
+}
+
+```
+
+
+```{r data}
+#reading in datafile
+lengetal <- read.csv("/Users/Lovisa Lundeberg/Documents/slutkurs/data/lengetal.csv", header = TRUE, sep = ",", quote = "\"")
+
+#saving the columns that are labeled (215-461) into new matrix
+exprs_an <- lengetal[,c(215:461)]
+
+#adding rownames that are in the first column of the original data
+rownames(exprs_an) <- paste(lengetal[,c(1)])
+
+#Writing the labeled data into a csv file
+#write.csv(exprs_an,"/Users/Lovisa #Lundeberg/Documents/slutkurs/data/lengetal_annotated.csv")
+```
+
+```{r database}
+# getting ensembl ids based on the hgnc symbols in the file
+library(biomaRt)
+mart = useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+ens_id_hum = getBM(filters = "hgnc_symbol", attributes =       c("ensembl_gene_id","hgnc_symbol"), values=rownames(exprs_an), mart = mart)
+
+# removing all genes that lack ensembl id or have multiple ones
+ensCount =  table(ens_id_hum$ensembl_gene_id) 
+one2one = names(which(ensCount == 1))
+ensCount =  table(ens_id_hum$hgnc_symbol) 
+one2oneGene = names(which(ensCount == 1))
+
+ens_id_hum =  ens_id_hum[ens_id_hum$ensembl_gene_id %in% one2one, ]
+ens_id_hum =  ens_id_hum[ens_id_hum$hgnc_symbol %in% one2oneGene, ]
+exprs_an = exprs_an[rownames(exprs_an) %in% ens_id_hum$hgnc_symbol, ]
+exprs_an = exprs_an[ens_id_hum$hgnc_symbol, ]
+
+
+#adding ensembl IDs as the first column in the data, removing NAs in the data
+exprs_an <- cbind(ensembl_id=ens_id_hum$ensembl_gene_id,exprs_an)
+exprs_an <- na.omit(exprs_an)
+```
+
+
+```{r filter}
+# filter out cells with low nDet
+nDet <- colSums(exprs_an[,-1]>1)
+hist(nDet,n=100)
+keep <- which(nDet>4000)
+
+exprs_an<-exprs_an[,keep]
+```
+
+Cyclone only works with ensembl IDs
+```{r cyclone, warning=F}
+#adding ensembl ids as rownames
+exprs_id <- exprs_an[,-1]
+rownames(exprs_id) <- paste(exprs_an[,1]) 
+
+exprs_id <- data.matrix(exprs_id)
+mmu.pairs <- readRDS(system.file("exdata", "human_cycle_markers.rds", package="scran"))
+
+set.seed(123)
+sce_leng <- SingleCellExperiment(assays=list(counts = exprs_id, logcounts = log2(exprs_id+1)))
+cc <- cyclone(sce_leng, pairs=mmu.pairs)
+table(cc$phase)
+```
+
+Seurat works with ensembl IDs for mouse data and with hgnc symbols for human data
+```{r seurat}
+exprs_hgnc <- exprs_an[,-1]
+
+sdata <- CreateSeuratObject(raw.data = exprs_hgnc, min.cells = 3, min.genes = 200,
+    project = "testseurat",is.expr=1,meta.data=NULL)
+
+sdata <- NormalizeData(sdata)
+sdata <- ScaleData(sdata)
+sdata <- FindVariableGenes(object = sdata, mean.function = ExpMean, 
+                           dispersion.function = LogVMR, x.low.cutoff = 0.2, 
+                           x.high.cutoff = 10, y.cutoff = 0.5)
+
+
+# run PCA
+sdata <- RunPCA(object = sdata, pc.genes = sdata@var.genes, do.print = FALSE)  
+# predict cell cycle
+sdata <- CellCycleScoring(sdata, g2m.genes = cc.genes$g2m.genes, 
+                          s.genes = cc.genes$s.genes)
+
+table(sdata@meta.data$Phase)
+
+```
