@@ -713,16 +713,41 @@ phase_MGH28[assigned_MGH28$scores$G1 < 0.5 & assigned_MGH28$scores$G2M < 0.5] <-
 phase_MGH28[assigned_MGH28$scores$G1 > 0.5 & assigned_MGH28$scores$G2M > 0.5] <- "Unknown"
 table(phase_MGH28)
 
-cc_fun <- function(g1,s,g2m) { 
-  }
-
-G1_MGH28 <- apply(iasva.sv_MGH28,2,[phase_MGH28=="G1"])
-S_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="S"]
-G2M_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="G2M"]
+G1_MGH28_SV1 <- iasva.sv_MGH28[,1][phase_MGH28=="G1"]
+S_MGH28_SV1 <- iasva.sv_MGH28[,1][phase_MGH28=="S"]
+G2M_MGH28_SV1 <- iasva.sv_MGH28[,1][phase_MGH28=="G2M"]
 Unknown_MGH28 <- iasva.sv_MGH28[,1][phase_MGH28=="Unknown"]
-vioplot(G1_MGH28, S_MGH28, G2M_MGH28, names=c("G1", "S", "G2M"), 
+vioplot(G1_MGH28_SV1, S_MGH28_SV1, G2M_MGH28_SV1, names=c("G1", "S", "G2M"), 
    col="gold", drawRect=TRUE)
 title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV1)")
+G1_MGH28_SV2 <- iasva.sv_MGH28[,2][phase_MGH28=="G1"]
+S_MGH28_SV2 <- iasva.sv_MGH28[,2][phase_MGH28=="S"]
+G2M_MGH28_SV2 <- iasva.sv_MGH28[,2][phase_MGH28=="G2M"]
+Unknown_MGH28_SV2 <- iasva.sv_MGH28[,2][phase_MGH28=="Unknown"]
+vioplot(G1_MGH28_SV2, S_MGH28_SV2, G2M_MGH28_SV2, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV2)")
+G1_MGH28_SV3 <- iasva.sv_MGH28[,3][phase_MGH28=="G1"]
+S_MGH28_SV3 <- iasva.sv_MGH28[,3][phase_MGH28=="S"]
+G2M_MGH28_SV3 <- iasva.sv_MGH28[,3][phase_MGH28=="G2M"]
+Unknown_MGH28_SV3 <- iasva.sv_MGH28[,3][phase_MGH28=="Unknown"]
+vioplot(G1_MGH28_SV3, S_MGH28_SV3, G2M_MGH28_SV3, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV3)")
+G1_MGH28_SV4 <- iasva.sv_MGH28[,4][phase_MGH28=="G1"]
+S_MGH28_SV4 <- iasva.sv_MGH28[,4][phase_MGH28=="S"]
+G2M_MGH28_SV4 <- iasva.sv_MGH28[,4][phase_MGH28=="G2M"]
+Unknown_MGH28_SV4 <- iasva.sv_MGH28[,4][phase_MGH28=="Unknown"]
+vioplot(G1_MGH28_SV4, S_MGH28_SV4, G2M_MGH28_SV4, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV4)")
+G1_MGH28_SV5 <- iasva.sv_MGH28[,5][phase_MGH28=="G1"]
+S_MGH28_SV5 <- iasva.sv_MGH28[,5][phase_MGH28=="S"]
+G2M_MGH28_SV5 <- iasva.sv_MGH28[,5][phase_MGH28=="G2M"]
+Unknown_MGH28_SV5 <- iasva.sv_MGH28[,5][phase_MGH28=="Unknown"]
+vioplot(G1_MGH28_SV5, S_MGH28_SV5, G2M_MGH28_SV5, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV5)")
 ```
 
 ```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
@@ -743,13 +768,41 @@ phase_MGH29[assigned_MGH29$scores$G1 < 0.5 & assigned_MGH29$scores$G2M < 0.5] <-
 phase_MGH29[assigned_MGH29$scores$G1 > 0.5 & assigned_MGH29$scores$G2M > 0.5] <- "Unknown"
 table(phase_MGH29)
 
-G1_MGH29 <- iasva.sv_MGH29[,1][phase_MGH29=="G1"]
-S_MGH29 <- iasva.sv_MGH29[,1][phase_MGH29=="S"]
-G2M_MGH29 <- iasva.sv_MGH29[,1][phase_MGH29=="G2M"]
+G1_MGH29_SV1 <- iasva.sv_MGH29[,1][phase_MGH29=="G1"]
+S_MGH29_SV1 <- iasva.sv_MGH29[,1][phase_MGH29=="S"]
+G2M_MGH29_SV1 <- iasva.sv_MGH29[,1][phase_MGH29=="G2M"]
 Unknown_MGH29 <- iasva.sv_MGH29[,1][phase_MGH29=="Unknown"]
-vioplot(G1_MGH29, S_MGH29, G2M_MGH29, names=c("G1", "S", "G2M"), 
+vioplot(G1_MGH29_SV1, S_MGH29_SV1, G2M_MGH29_SV1, names=c("G1", "S", "G2M"), 
    col="gold", drawRect=TRUE)
 title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV1)")
+G1_MGH29_SV2 <- iasva.sv_MGH29[,2][phase_MGH29=="G1"]
+S_MGH29_SV2 <- iasva.sv_MGH29[,2][phase_MGH29=="S"]
+G2M_MGH29_SV2 <- iasva.sv_MGH29[,2][phase_MGH29=="G2M"]
+Unknown_MGH29_SV2 <- iasva.sv_MGH29[,2][phase_MGH29=="Unknown"]
+vioplot(G1_MGH29_SV2, S_MGH29_SV2, G2M_MGH29_SV2, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV2)")
+G1_MGH29_SV3 <- iasva.sv_MGH29[,3][phase_MGH29=="G1"]
+S_MGH29_SV3 <- iasva.sv_MGH29[,3][phase_MGH29=="S"]
+G2M_MGH29_SV3 <- iasva.sv_MGH29[,3][phase_MGH29=="G2M"]
+Unknown_MGH29_SV3 <- iasva.sv_MGH29[,3][phase_MGH29=="Unknown"]
+vioplot(G1_MGH29_SV3, S_MGH29_SV3, G2M_MGH29_SV3, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV3)")
+G1_MGH29_SV4 <- iasva.sv_MGH29[,4][phase_MGH29=="G1"]
+S_MGH29_SV4 <- iasva.sv_MGH29[,4][phase_MGH29=="S"]
+G2M_MGH29_SV4 <- iasva.sv_MGH29[,4][phase_MGH29=="G2M"]
+Unknown_MGH29_SV4 <- iasva.sv_MGH29[,4][phase_MGH29=="Unknown"]
+vioplot(G1_MGH29_SV4, S_MGH29_SV4, G2M_MGH29_SV4, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV4)")
+G1_MGH29_SV5 <- iasva.sv_MGH29[,5][phase_MGH29=="G1"]
+S_MGH29_SV5 <- iasva.sv_MGH29[,5][phase_MGH29=="S"]
+G2M_MGH29_SV5 <- iasva.sv_MGH29[,5][phase_MGH29=="G2M"]
+Unknown_MGH29_SV5 <- iasva.sv_MGH29[,5][phase_MGH29=="Unknown"]
+vioplot(G1_MGH29_SV5, S_MGH29_SV5, G2M_MGH29_SV5, names=c("G1", "S", "G2M"), 
+   col="gold", drawRect=TRUE)
+title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV5)")
 ```
 
 ```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
