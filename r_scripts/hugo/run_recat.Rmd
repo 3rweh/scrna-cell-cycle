@@ -33,30 +33,30 @@ cc_data <- readRDS("embryonic_data/EMTAB2805.rds")
 # All elements of the list must have the same dimensions, and dimension names (if present) must be consistent across elements and 
 # with the row names of rowRanges and colData
 # Retrieves the gene vs. counts data in TPM
-cc_counts <- assays(experiments(cc_data)[["gene"]])[["TPM"]]
+exprs_sa_id <- assays(experiments(cc_data)[["gene"]])[["TPM"]]
 
 # Log transforms the data as get_gest requires log-transformed data 
-cc_counts <- log(cc_counts+1)
+exprs_sa_id <- log(exprs_sa_id+1)
 
 # Remove spike-ins from expression table,  ERCC = External RNA Controls Consortium (ERCC)
 # External RNA-controls to check for variability, ie: not needed for the analysis
-ercc <- grep("ERCC",rownames(cc_counts))
-cc_counts <- cc_counts[-ercc,]
+ercc <- grep("ERCC",rownames(exprs_sa_id))
+exprs_sa_id <- exprs_sa_id[-ercc,]
 # Remove the .1 etc from the ensembl gene name
-gname <- rownames(cc_counts)
+gname <- rownames(exprs_sa_id)
 ensname <- gsub("\\.\\d+","",gname)
-rownames(cc_counts) <- ensname
+rownames(exprs_sa_id) <- ensname
 
 # Filter out all cells with a low cell-count
-dim(cc_counts)
-nDet <- colSums(cc_counts>1)
+dim(exprs_sa_id)
+nDet <- colSums(exprs_sa_id>1)
 keep <- which(nDet>4000)
-cc_counts <- cc_counts[,keep]
-dim(cc_counts)
+exprs_sa_id <- exprs_sa_id[,keep]
+dim(exprs_sa_id)
 
 # Inspect the matrix
 indices <- c(1, 20, 33, 44, 64)
-cc_counts[indices,indices]
+exprs_sa_id[indices,indices]
 ```
 
 # Clears out all genes not present as marker genes
@@ -64,24 +64,24 @@ cc_counts[indices,indices]
 ```{r preprocess}
 
 source("reCAT_master/R/get_test_exp.R")
-cc_counts <- get_test_exp(cc_counts)
-dim(cc_counts)
+exprs_sa_id <- get_test_exp(exprs_sa_id)
+dim(exprs_sa_id)
 ```
 
 # Orders the data using the TSP algorithm
 
 ```{r order}
 source("reCAT_master/R/get_ordIndex.R")
-# cc_counts = input matrix, 3 = no. threads used for processing, can be increased on cluster
+# exprs_sa_id = input matrix, 3 = no. threads used for processing, can be increased on cluster
 nthread = 3
-ordIndex <- get_ordIndex(cc_counts, nthread)
+ordIndex <- get_ordIndex(exprs_sa_id, nthread)
 ```
 
 # Get cell-cycle scores using the Bayes-scores & Mean-scores algorithm
 
 ```{r scores}
 source("reCAT_master/R/get_score.R")
-score_result <- get_score(t(cc_counts))
+score_result <- get_score(t(exprs_sa_id))
 score_result$bayes_score
 score_result$mean_score
 # cat(score_result$bayes_score, file="bayes_score.txt")

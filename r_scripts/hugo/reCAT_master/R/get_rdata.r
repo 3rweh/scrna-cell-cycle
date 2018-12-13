@@ -9,11 +9,11 @@ get_rdata <- function(score_result, ordIndex)
 	g2m_score <- bayes_cell$G2M.score
 	
 	get_max_reg <- function(input)
-	# Returns the max segment region out of 4 for the input vector 
+	# Returns the max segment region out of 6 for the input vector 
 	{
 		val = -Inf
 		pos = 0
-		inp_splt <- split(input, cut(seq(input), 4, labels = FALSE))
+		inp_splt <- split(input, cut(seq(input), 6, labels = FALSE))
 		reg_vec <- c()
 		for (i in 1:length(inp_splt))
 		{
@@ -29,7 +29,7 @@ get_rdata <- function(score_result, ordIndex)
 	{
 		val = Inf
 		pos = 0
-		n_1 = 4
+		n_1 = 6
 		n_2 = 6
 		
 		
@@ -47,6 +47,8 @@ get_rdata <- function(score_result, ordIndex)
 		inp_b_splt <- split(inp_b, cut(seq(inp_b), n_2, labels = FALSE))
 		v_2_b_splt <- split(v_2_b, cut(seq(v_2_b), n_2, labels = FALSE))
 		v_3_b_splt <- split(v_3_b, cut(seq(v_3_b), n_2, labels = FALSE)) 
+		
+		
 		
 		d_vec <- c()
 		for (i in 1:length(inp_b_splt))

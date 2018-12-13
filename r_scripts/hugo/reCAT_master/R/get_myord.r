@@ -13,8 +13,8 @@ get_myord <- function(cycle_start, ordIndex)
 	
 	# Forward direction
 	} else {
-		myord = c(1:cycle_start, cycle_start:length(ordIndex))
-		myord <- tail(myord, -1)
+		myord = c(cycle_start:length(ordIndex), 1:cycle_start)
+		myord <- head(myord, -1)
 	}
 	return(myord)
 }
