@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Script for running Sasagawa et al data on Cyclone and Seurat
 
-
+A small dataset of 23 cells. Annotation G1 8, S 7 and G2M 8.
 
 ```{r data}
 mypath = "/Users/Lovisa Lundeberg/Documents/scrna-cell-cycle/r_scripts/lovisa/embryonic_data/sasagawa"
@@ -45,11 +45,38 @@ exprs_sa<-exprs_sa[,keep]
 #exprs_id <- exprs_an[,-1]
 #rownames(exprs_id) <- paste(exprs_an[,1]) 
 
-exprs_sa_cyc <- data.matrix(exprs_sa[,-1])
+exprs_sa_id <- data.matrix(exprs_sa[,-1])
 mmu.pairs <- readRDS(system.file("exdata", "mouse_cycle_markers.rds", package="scran"))
 
 set.seed(123)
-sce_leng <- SingleCellExperiment(assays=list(counts = exprs_sa_cyc, logcounts = log2(exprs_sa_cyc+1)))
+sce_leng <- SingleCellExperiment(assays=list(counts = exprs_sa_id, logcounts = log2(exprs_sa_id+1)))
 cc <- cyclone(sce_leng, pairs=mmu.pairs)
 table(cc$phase)
+
+
+cyc_sa_pre <- as.vector(unlist(lapply(c(table(cc$phases)), as.numeric)))
+
+```
+```{r Seurat}
+# create a seurat object
+sdata <- CreateSeuratObject(raw.data = exprs_sa_id, min.cells = 3, min.genes = 200,
+    project = "CC",is.expr=1,meta.data=NULL)
+
+sdata <- NormalizeData(sdata)
+sdata <- ScaleData(sdata)
+sdata <- FindVariableGenes(object = sdata, mean.function = ExpMean, 
+                           dispersion.function = LogVMR, x.low.cutoff = 0.2, 
+                           x.high.cutoff = 10, y.cutoff = 0.5)
+
+# run PCA
+sdata <- RunPCA(object = sdata, pc.genes = sdata@var.genes, do.print = FALSE)  
+# predict cell cycle
+sdata <- CellCycleScoring(sdata, g2m.genes = cc.genes.mouse$g2m.genes, 
+                          s.genes = cc.genes.mouse$s.genes)
+
+table(sdata@meta.data$Phase)
+
+# saving the result as a numeric vector
+seu_sa_pre <- c(table(sdata@meta.data$Phase))
+seu_sa_pre <- as.vector(unlist(lapply(c(seu_sa_pre), as.numeric)))
 ```
