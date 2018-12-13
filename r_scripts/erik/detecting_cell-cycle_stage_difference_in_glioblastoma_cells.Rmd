@@ -605,11 +605,11 @@ anno.colors_MGH30 <- list(Cluster=cluster.col_MGH30)
 anno.colors_MGH30
 
 pheatmap(log(marker.counts.SV1_MGH30+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_MGH30,
+         clustering_method = "ward.D2",cutree_cols = 2, annotation_col = anno.col2_MGH30,
          annotation_colors = anno.colors_MGH30)
 
 pheatmap(log(marker.counts.SV1.long_MGH30+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2",cutree_cols = 2,annotation_col = anno.col2_MGH30,
+         clustering_method = "ward.D2",cutree_cols = 2, annotation_col = anno.col2_MGH30,
          annotation_colors = anno.colors_MGH30)
 
 gene.list_MGH30 <- rownames(marker.counts.SV1_MGH30)
