@@ -99,6 +99,7 @@ plot_mean(score_result$mean_score, ordIndex)
 ```{r rdata}
 source("reCAT_master/R/get_rdata.R")
 rdata <- get_rdata(score_result, ordIndex)
+View(rdata)
 ```
 
 # Finds the start of the cell-cycle for time-series scoring
@@ -107,6 +108,7 @@ rdata <- get_rdata(score_result, ordIndex)
 source("reCAT_master/R/get_start.R")
 cls_num = 3
 cycle_start = get_start(bayes_score = score_result$bayes_score, mean_score = score_result$mean_score, ordIndex = ordIndex, cls_num = cls_num, rdata = rdata, nthread = nthread)
+print(cycle_start)
 ```
 
 ```{r get_myord}
@@ -125,4 +127,5 @@ s_c = sum(hmm_result == 2)
 g2m_c = sum(hmm_result == 3)
 phase_counts = t(data.frame(g1_c, g2m_c, s_c))
 write.table(phase_counts,"recat_phase_output.txt",sep="\t",col.names = FALSE, row.names=FALSE)
+View(phase_counts)
 ```
