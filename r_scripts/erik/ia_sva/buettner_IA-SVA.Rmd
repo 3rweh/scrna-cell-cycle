@@ -134,19 +134,67 @@ summ_exp_buet <- SummarizedExperiment(assays = buet_exprs)
 iasva.res_buet <- iasva(summ_exp_buet, as.matrix(mod_buet[,-1]),verbose=FALSE, permute=FALSE, num.sv=7)
 iasva.sv_buet <- iasva.res_buet$sv
 
-Cluster_buet <- as.factor(iasva.sv_buet[,7] < 0.1) 
-levels(Cluster_buet)=c("Cluster1","Cluster2")
-table(Cluster_buet)
+Cluster_buet_7 <- as.factor(iasva.sv_buet[,7] < 0.1) 
+levels(Cluster_buet_7)=c("Cluster1","Cluster2")
+table(Cluster_buet_7)
 
-pairs(iasva.sv_buet[,1:7], main="IA-SVA", pch=21, col=color.vec[Cluster_buet],
-      bg=color.vec[Cluster_buet], oma=c(4,4,6,14))
-legend("right", levels(Cluster_buet), fill=color.vec, bty="n")
+Cluster_buet_6 <- as.factor(iasva.sv_buet[,6] < 0.1) 
+levels(Cluster_buet_6)=c("Cluster1","Cluster2")
+table(Cluster_buet_6)
+
+Cluster_buet_5 <- as.factor(iasva.sv_buet[,5] < 0.1) 
+levels(Cluster_buet_5)=c("Cluster1","Cluster2")
+table(Cluster_buet_5)
+
+Cluster_buet_4 <- as.factor(iasva.sv_buet[,4] < 0.1) 
+levels(Cluster_buet_4)=c("Cluster1","Cluster2")
+table(Cluster_buet_4)
+
+Cluster_buet_3 <- as.factor(iasva.sv_buet[,3] < 0.1) 
+levels(Cluster_buet_3)=c("Cluster1","Cluster2")
+table(Cluster_buet_3)
+
+Cluster_buet_2 <- as.factor(iasva.sv_buet[,2] < 0.1) 
+levels(Cluster_buet_2)=c("Cluster1","Cluster2")
+table(Cluster_buet_2)
+
+Cluster_buet_1 <- as.factor(iasva.sv_buet[,1] < 0.1) 
+levels(Cluster_buet_1)=c("Cluster1","Cluster2")
+table(Cluster_buet_1)
+
+pairs(iasva.sv_buet[,1:7], main="IA-SVA_7", pch=21, col=color.vec[Cluster_buet_7],
+      bg=color.vec[Cluster_buet_7], oma=c(4,4,6,14))
+legend("right", levels(Cluster_buet_7), fill=color.vec, bty="n")
+
+pairs(iasva.sv_buet[,1:7], main="IA-SVA_6", pch=21, col=color.vec[Cluster_buet_6],
+      bg=color.vec[Cluster_buet_6], oma=c(4,4,6,14))
+legend("right", levels(Cluster_buet_6), fill=color.vec, bty="n")
+
+pairs(iasva.sv_buet[,1:7], main="IA-SVA_5", pch=21, col=color.vec[Cluster_buet_5],
+      bg=color.vec[Cluster_buet_5], oma=c(4,4,6,14))
+legend("right", levels(Cluster_buet_5), fill=color.vec, bty="n")
+
+pairs(iasva.sv_buet[,1:7], main="IA-SVA_4", pch=21, col=color.vec[Cluster_buet_4],
+      bg=color.vec[Cluster_buet_4], oma=c(4,4,6,14))
+legend("right", levels(Cluster_buet_4), fill=color.vec, bty="n")
+
+pairs(iasva.sv_buet[,1:7], main="IA-SVA_3", pch=21, col=color.vec[Cluster_buet_3],
+      bg=color.vec[Cluster_buet_3], oma=c(4,4,6,14))
+legend("right", levels(Cluster_buet_3), fill=color.vec, bty="n")
+
+pairs(iasva.sv_buet[,1:7], main="IA-SVA_2", pch=21, col=color.vec[Cluster_buet_2],
+      bg=color.vec[Cluster_buet_2], oma=c(4,4,6,14))
+legend("right", levels(Cluster_buet_2), fill=color.vec, bty="n")
+
+pairs(iasva.sv_buet[,1:7], main="IA-SVA_1", pch=21, col=color.vec[Cluster_buet_1],
+      bg=color.vec[Cluster_buet_1], oma=c(4,4,6,14))
+legend("right", levels(Cluster_buet_1), fill=color.vec, bty="n")
 
 plot(iasva.sv_buet[,c(4,7)], main="IA-SVA", pch=21, xlab="SV1", ylab="SV7",
      col=color.vec[Cluster_buet], bg=color.vec[Cluster_buet])
 
-cor(Num_Detected_Genes_buet, iasva.sv_buet[,1])
-cor(Geo_Lib_buet, iasva.sv_buet[,1])
+cor(Num_Detected_Genes_buet, iasva.sv_buet[,1:7])
+cor(Geo_Lib_buet, iasva.sv_buet[,1:7])
 corrplot(cor(iasva.sv_buet))
 ```
 
