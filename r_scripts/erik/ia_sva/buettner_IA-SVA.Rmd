@@ -338,40 +338,40 @@ associated with SV1 (multiple testing adjusted p-value < 0.05,
 default significance cutoff, and R-squared value > 0.3).
 ```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
 # try different R2 thresholds
-pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/Clustering_analyses_figure3_sv1_buet.pdf"))
+pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/Clustering_analyses_figure3_sv2_buet.pdf"))
 r2.results_buet <- study_R2(summ_exp_buet, iasva.sv_buet, selected.svs=2, no.clusters=2)
 dev.off()
 
-marker.counts.SV1_buet <- find_markers(summ_exp_buet, 
-                            as.matrix(iasva.sv_buet[,c(1)]), rsq.cutoff = 0.4)
-marker.counts.SV1.long_buet <- find_markers(summ_exp_buet, 
-                              as.matrix(iasva.sv_buet[,c(1)]), rsq.cutoff = 0.45)
-nrow(marker.counts.SV1_buet) 
-nrow(marker.counts.SV1.long_buet)
+marker.counts.SV2_buet <- find_markers(summ_exp_buet, 
+                            as.matrix(iasva.sv_buet[,c(2)]), rsq.cutoff = 0.55)
+marker.counts.SV2.long_buet <- find_markers(summ_exp_buet, 
+                              as.matrix(iasva.sv_buet[,c(2)]), rsq.cutoff = 0.5)
+nrow(marker.counts.SV2_buet) 
+nrow(marker.counts.SV2.long_buet)
 
-anno.col2_buet <- data.frame(Cluster=Cluster_buet, SV1=iasva.sv_buet[,1])
-rownames(anno.col2_buet) <- colnames(marker.counts.SV1_buet)
+anno.col2_buet <- data.frame(Cluster=Cluster_buet_2, SV2=iasva.sv_buet[,2])
+rownames(anno.col2_buet) <- colnames(marker.counts.SV2_buet)
 head(anno.col2_buet)
 
 cluster.col_buet <- color.vec[1:2]
-names(cluster.col_buet) <- as.vector(levels(Cluster_buet_1))
+names(cluster.col_buet) <- as.vector(levels(Cluster_buet_2))
 anno.colors_buet <- list(Cluster=cluster.col_buet)
 anno.colors_buet
 
-pheatmap(log(marker.counts.SV1_buet+1), show_colnames =FALSE, 
+pheatmap(log(marker.counts.SV2_buet+1), show_colnames =FALSE, 
          clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
          annotation_colors = anno.colors_buet)
 
-pheatmap(log(marker.counts.SV1.long_buet+1), show_colnames =FALSE, 
+pheatmap(log(marker.counts.SV2.long_buet+1), show_colnames =FALSE, 
          clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
          annotation_colors = anno.colors_buet)
 
-gene.list_buet_SV1 <- rownames(marker.counts.SV1_buet)
-write.table(gene.list_buet_SV1, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_buet_SV1.txt"),
+gene.list_buet_SV2 <- rownames(marker.counts.SV2_buet)
+write.table(gene.list_buet_SV2, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_buet_SV2.txt"),
             col.names =F, row.names = F, quote = F)
 
-gene.list.long_buet_SV1 <- rownames(marker.counts.SV7.long_buet)
-write.table(gene.list.long_buet_SV1, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_buet_SV1.txt"),
+gene.list.long_buet_SV2 <- rownames(marker.counts.SV2.long_buet)
+write.table(gene.list.long_buet_SV2, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_buet_SV2.txt"),
             col.names =F, row.names = F, quote = F)
 
 ```
