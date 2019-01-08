@@ -244,7 +244,9 @@ Section for running the data from Sasagawa *et al*.
 ### Load the Sasagawa *et al* data
 The data is a small dataset of 23 cells. The ES files with a clear cell annotation is used (G1, S and M). The annotation is 8 cells in G1, 7 in S and 8 in G2M.
 
-The data can be downloaded from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE42268. This is 23 txt files. In this code they are all put into a folder called "sasagawa" where all the txt files are loaded from.
+The data can be downloaded from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE42268. This is several txt files. 23 of them are used in this script since they are labelled. The files that should be downloaded in order to run the script are the files containing ESG1, ESS and ESG2 in the name. 
+
+In this code they are all put into a folder called "sasagawa" where all the txt files are loaded from.
 
 ```{r data}
 mypath = "/Users/Lovisa Lundeberg/Documents/scrna-cell-cycle/r_scripts/lovisa/embryonic_data/sasagawa"
@@ -321,7 +323,7 @@ seu_sa_pre <- as.vector(unlist(lapply(table(sdata@meta.data$Phase), as.numeric))
 ```
 
 ## Evaluation
-This section is for evaluating the result of the programs. In order to run this section all programs have to have been run using all the datasets.
+This section is for evaluating the result of the programs. All programs have to have been run using all dataset in order to run this section. If not exclude the variables in the code that corresponds to the programs/datasets that are missing.
 
 ### RMSE
 This section makes plots for each of the programs of the RMSE values. It is calculated with the result vectors and the annotation of the cells.
@@ -355,3 +357,20 @@ barplot(RMSE_seu, main = "Seurat", xlab ="Data", ylab="RMSE", names.arg=c("Buttn
 barplot(RMSE_cyc, main = "Cyclone", xlab ="Data", ylab="RMSE", names.arg=c("Buttner et al.","Leng et al.", "Sasagawa et al."), border="blue", density=c(10), col=c("purple","purple","purple"))
 
 ```
+
+Normalizing the RMSE values based on the number of cells in each set
+```{r NRMSE}
+NRMSE_cyc <- c(RMSE(cyc_bu_pre, le_an)/288, RMSE(cyc_le_pre, le_an)/247, RMSE(cyc_sa_pre, sa_an)/22) * 100
+
+NRMSE_seu <- c(RMSE(seu_bu_pre, le_an)/288, RMSE(seu_le_pre, le_an)/247, RMSE(seu_sa_pre, sa_an)/22) * 100
+
+```
+
+```{r plot normalized}
+barplot(NRMSE_seu, main = "Seurat", xlab ="Data", ylab="NRMSE (%)", ylim=c(0,25), names.arg=c("Buttner et al. (288 cells)","Leng et al. (247 cells)", "Sasagawa et al. (22 cells)"), border="blue", density=c(20), col=c("purple","purple","purple"))
+
+
+barplot(NRMSE_cyc, main = "Cyclone", xlab ="Data", ylab="NRMSE (%)",ylim=c(0,25), names.arg=c("Buttner et al. (288 cells)","Leng et al. (247 cells)", "Sasagawa et al. (22 cells)"), border="blue", density=c(20), col=c("purple","purple","purple"))
+
+```
+

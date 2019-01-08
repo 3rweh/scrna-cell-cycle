@@ -87,19 +87,21 @@ exprs_an = exprs_an[rownames(exprs_an) %in% ens_id_hum$hgnc_symbol, ]
 exprs_an = exprs_an[ens_id_hum$hgnc_symbol, ]
 
 
-#adding ensembl IDs as the first column in the data, removing NAs in the data
-exprs_an <- cbind(ensembl_id=ens_id_hum$ensembl_gene_id,exprs_an)
+#removing NAs in the data
 exprs_an <- na.omit(exprs_an)
 ```
 
 
 ```{r filter}
 # filter out cells with low nDet
-nDet <- colSums(exprs_an[,-1]>1)
+nDet <- colSums(exprs_an>1)
 hist(nDet,n=100)
 keep <- which(nDet>4000)
 
 exprs_an<-exprs_an[,keep]
+
+#adding ensmbl IDs
+exprs_an <- cbind(ensembl_id=ens_id_hum$ensembl_gene_id,exprs_an)
 ```
 
 Cyclone only works with ensembl IDs

@@ -24,20 +24,21 @@ id <- as.data.frame(exprs_sa[,1:2])
 
 exprs_sa <- exprs_sa[ ,-which(names(exprs_sa) %in% c("id", "gene.symbol"))]
 
-rownames(exprs_sa) <- paste(id[,1]) 
-exprs_sa <- cbind(hgnc_symbol=id[,2],exprs_sa)
-
-
 ```
 
 
 ```{r filter}
 # filter out cells with low nDet
-nDet <- colSums(exprs_sa[,-1]>1)
+nDet <- colSums(exprs_sa)
 hist(nDet,n=100)
 keep <- which(nDet>4000)
 
 exprs_sa<-exprs_sa[,keep]
+
+#adding ENS id and hgnc symbols to matrix
+rownames(exprs_sa) <- paste(id[,1]) 
+exprs_sa <- cbind(hgnc_symbol=id[,2],exprs_sa)
+
 ```
 
 ```{r cyclone, warning=F}
