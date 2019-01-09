@@ -22,7 +22,6 @@ suppressPackageStartupMessages(library(TSP))
 # Load the data 
 
 ```{r data}
-# load("reCAT_master/data/ola_mES_2i.RData")
 cc_data <- readRDS("embryonic_data/EMTAB2805.rds")
 
 # Get tpms at gene level, TPM = (Transcripts Per Kilobase Million), TPM is generated beforehand through
@@ -96,19 +95,18 @@ plot_bayes(score_result$bayes_score, ordIndex)
 plot_mean(score_result$mean_score, ordIndex)
 ```
 
-```{r rdata}
-source("reCAT_master/R/get_rdata.R")
-rdata <- get_rdata(score_result, ordIndex)
-View(rdata)
-```
-
 # Finds the start of the cell-cycle for time-series scoring
 
 ```{r get_start}
 source("reCAT_master/R/get_start.R")
-cls_num = 3
-cycle_start = get_start(bayes_score = score_result$bayes_score, mean_score = score_result$mean_score, ordIndex = ordIndex, cls_num = cls_num, rdata = rdata, nthread = nthread)
+cycle_start = get_start(score_result, ordIndex)
 print(cycle_start)
+```
+
+```{r rdata}
+source("reCAT_master/R/get_rdata.R")
+rdata <- get_rdata(score_result, ordIndex)
+View(rdata)
 ```
 
 ```{r get_myord}
@@ -120,6 +118,7 @@ myord = get_myord(cycle_start, ordIndex)
 
 ```{r find_phase}
 source("reCAT_master/R/get_hmm.R")
+cls_num = 3
 hmm_result <- get_hmm_order(bayes_score = score_result$bayes_score, mean_score = score_result$mean_score, ordIndex = ordIndex, cls_num = cls_num, myord = myord, rdata = rdata)
 
 g1_c = sum(hmm_result == 1)

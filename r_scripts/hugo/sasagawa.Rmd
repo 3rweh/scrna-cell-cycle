@@ -1,0 +1,183 @@
+---
+title: "sasagawa"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Script for running Sasagawa et al data on Cyclone and Seurat
+
+A small dataset of 23 cells. Annotation G1 8, S 7 and G2M 8.
+
+```{r data}
+mypath = "c:/Applied_Bioinformatics/embryonic_data/sasagawa"
+setwd(mypath)
+
+# reading in the separate text files and putting them next to each other in a data frame
+txt_files_ls = list.files(path=mypath, pattern="*.txt")
+txt_files_df <- lapply(txt_files_ls, function(x) {read.table(file = x, header = T, sep ="")})
+exprs_sa <- do.call("cbind", lapply(txt_files_df, as.data.frame))
+
+id <- as.data.frame(exprs_sa[,1:2])
+
+exprs_sa <- exprs_sa[ ,-which(names(exprs_scla) %in% c("id", "gene.symbol"))]
+
+rownames(exprs_sa) <- paste(id[,1]) 
+exprs_sa <- cbind(hgnc_symbol=id[,2],exprs_sa)
+
+
+```
+
+
+```{r filter}
+
+# filter out cells with low nDet
+nDet <- colSums(exprs_sa[,-1]>1)
+hist(nDet,n=100)
+keep <- which(nDet>4000)
+
+exprs_sa<-exprs_sa[,keep]
+```
+
+# ```{r cyclone, warning=F}
+#adding ensembl ids as rownames
+#exprs_id <- exprs_an[,-1]
+#rownames(exprs_id) <- paste(exprs_an[,1]) 
+
+# exprs_sa_id <- data.matrix(exprs_sa[,-1])
+# mmu.pairs <- readRDS(system.file("exdata", "mouse_cycle_markers.rds", package="scran"))
+
+# set.seed(123)
+# sce_leng <- SingleCellExperiment(assays=list(counts = exprs_sa_id, logcounts = log2(exprs_sa_id+1)))
+# cc <- cyclone(sce_leng, pairs=mmu.pairs)
+# table(cc$phase)
+
+
+# cyc_sa_pre <- as.vector(unlist(lapply(c(table(cc$phases)), as.numeric)))
+
+# ```
+
+# Runs Seurat for the data
+
+# ```{r Seurat}
+# create a seurat object
+# sdata <- CreateSeuratObject(raw.data = exprs_sa_id, min.cells = 3, min.genes = 200,
+#    project = "CC",is.expr=1,meta.data=NULL)
+
+# sdata <- NormalizeData(sdata)
+# sdata <- ScaleData(sdata)
+# sdata <- FindVariableGenes(object = sdata, mean.function = ExpMean, 
+#                           dispersion.function = LogVMR, x.low.cutoff = 0.2, 
+#                           x.high.cutoff = 10, y.cutoff = 0.5)
+
+# run PCA
+# sdata <- RunPCA(object = sdata, pc.genes = sdata@var.genes, do.print = FALSE)  
+# predict cell cycle
+# sdata <- CellCycleScoring(sdata, g2m.genes = cc.genes.mouse$g2m.genes, 
+#                          s.genes = cc.genes.mouse$s.genes)
+
+# table(sdata@meta.data$Phase)
+
+# saving the result as a numeric vector
+# seu_sa_pre <- c(table(sdata@meta.data$Phase))
+# seu_sa_pre <- as.vector(unlist(lapply(c(seu_sa_pre), as.numeric)))
+# ```
+
+# Running the reCAT-script
+
+```{r reCAT}
+
+
+mypath = "c:/Applied_Bioinformatics/"
+setwd(mypath)
+
+#adding ensembl ids as rownames
+exprs_id <- exprs_an[,-1]
+rownames(exprs_id) <- paste(exprs_an[,1]) 
+
+exprs_sa_id <- data.matrix(exprs_sa[,-1])
+
+# Log transforms the data as get_test requires log-transformed data 
+exprs_sa_id <- log(exprs_sa_id+1)
+
+dim(exprs_sa_id)
+
+```
+
+# Clears out all genes not present as marker genes
+
+```{r reCAT_preprocess}
+
+source("reCAT_master/R/get_test_exp.R")
+exprs_sa_id <- get_test_exp(exprs_sa_id)
+dim(exprs_sa_id)
+```
+
+# Orders the data using the TSP algorithm
+
+```{r reCAT_order}
+source("reCAT_master/R/get_ordIndex.R")
+# exprs_sa_id = input matrix, 3 = no. threads used for processing, can be increased on cluster
+nthread =3
+
+ordIndex <- get_ordIndex(exprs_sa_id, nthread)
+```
+
+# Get cell-cycle scores using the Bayes-scores & Mean-scores algorithm
+
+```{r reCAT_scores}
+source("reCAT_master/R/get_score.R")
+score_result <- get_score(t(exprs_sa_id))
+score_result$bayes_score
+score_result$mean_score
+# cat(score_result$bayes_score, file="bayes_score.txt")
+# cat(score_result$mean_score, file="mean_score.txt")
+```
+
+# Plots the score values 
+
+```{r reCAT_plot_scores}
+source("reCAT_master/R/plot.R")
+plot_bayes(score_result$bayes_score, ordIndex)
+plot_mean(score_result$mean_score, ordIndex)
+```
+
+
+```{r reCAT_rdata}
+source("reCAT_master/R/get_rdata.R")
+rdata <- get_rdata(score_result, ordIndex)
+View(rdata)
+```
+
+# Finds the start of the cell-cycle for time-series scoring
+
+```{r reCAT_get_start}
+source("reCAT_master/R/get_start.R")
+cycle_start = get_start(score_result, ordIndex)
+print(cycle_start)
+```
+
+```{r reCAT_get_myord}
+source("reCAT_master/R/get_myord.R")
+myord = get_myord(cycle_start, ordIndex)
+```
+
+# Finds the cell cycle phases
+
+```{r reCAT_find_phase}
+source("reCAT_master/R/get_hmm.R")
+cls_num <- 3
+hmm_result <- get_hmm_order(bayes_score = score_result$bayes_score, mean_score = score_result$mean_score, ordIndex = ordIndex, cls_num = cls_num, myord = myord, rdata = rdata)
+
+g1_c = sum(hmm_result == 1)
+s_c = sum(hmm_result == 2)
+g2m_c = sum(hmm_result == 3)
+phase_counts = t(data.frame(g1_c, g2m_c, s_c))
+write.table(phase_counts,"recat_phase_output.txt",sep="\t",col.names = FALSE, row.names=FALSE)
+View(phase_counts)
+```
+
+```
+

@@ -1,0 +1,590 @@
+---
+title: "protocol"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Protocol for evaluation of different cell cycle programs on different datasets.
+
+The script is divided into different parts. In each part a different dataset is loaded and used as input for the programs; Cyclone, Seurat, reCAT and IA-SVA. The last part of the script is an evaluation of the performance of the programs. After the datasets that we have included here there is a section where the user can insert their own dataset and run it. In order to include the custom data into the evaluation it needs to be annotated according to cell cycle beforehand. See instructions above the section to see which format needs to be used.
+
+### Loading packages and marker genes (for Seurat)
+
+```{r load, warning=FALSE}
+
+suppressPackageStartupMessages(library(SummarizedExperiment))
+suppressPackageStartupMessages(library(MultiAssayExperiment))
+
+suppressPackageStartupMessages(library(plotrix))
+suppressPackageStartupMessages(library(Seurat))
+suppressPackageStartupMessages(library(scran))
+suppressPackageStartupMessages(library(gridExtra))
+
+```
+
+Run this chunk for Seurat to find the marker genes for mouse and human. For other organisms a Sandbag function needs to be used. It will be saved to the environment. If the variables were to be cleant this chunk needs to be run again. 
+```{r convert_names}
+savefile = "seurat_cc_genes_mouse.Rdata"
+if (file.exists(savefile)){
+  load(savefile)
+}else{
+
+# Load human ensembl attributes
+human = biomaRt::useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+# Load mouse ensembl attributes
+mouse = biomaRt::useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+
+hsa2mmEnsembl <- function(x,mouse,human){
+  # Link both datasets and retrieve mouse genes from the human genes
+  genes.list = biomaRt::getLDS(attributes = c("hgnc_symbol"), filters = "hgnc_symbol", values = x , mart = human, attributesL = c("mgi_symbol","ensembl_gene_id"), martL = mouse, uniqueRows = T)
+  # Get unique names of genes 
+  mouse.gene.list <- unique(genes.list[, 3])
+  return(mouse.gene.list)
+}
+
+# load data from Seurat package
+data(cc.genes)
+# convert to mouse ensembl IDs
+cc.genes.mouse <- lapply(cc.genes, hsa2mmEnsembl, mouse,human)
+save(cc.genes.mouse, file=savefile)
+}
+
+```
+
+
+## Buttner *et al.* data (2015)
+Section for running the Buttner data through the programs.
+
+### Load the Buttner data
+The Buttner data can be downloaded from the the conquer data base (http://imlspenticton.uzh.ch:3838/conquer/)
+
+```{r Buttner data}
+cc.data <- readRDS("/Users/Lovisa Lundeberg/Documents/scrna-cell-cycle/r_scripts/lovisa/embryonic_data/EMTAB2805.rds")
+
+# get tpms at gene level
+exprs <- assays(experiments(cc.data)[["gene"]])[["TPM"]]
+# remove the .1 etc from the ensembl gene name
+gname <- rownames(exprs)
+ensname <- gsub("\\.\\d+","",gname)
+rownames(exprs) <- ensname
+
+# remove spike-ins from expression table
+ercc <- grep("ERCC",rownames(exprs))
+exprs <- exprs[-ercc,]
+
+# metadata with cell cycle stage assignment
+M <- as.data.frame(colData(cc.data))
+```
+
+### Filter out cells of low quality
+
+
+```{r filter}
+# filter out cells with low nDet
+nDet <- colSums(exprs>1)
+hist(nDet,n=100)
+keep <- which(nDet>4000)
+
+exprs<-exprs[,keep]
+M <- M[keep,]
+
+```
+
+### Running cyclone
+
+```{r cyclone, warning=F}
+mmu.pairs <- readRDS(system.file("exdata", "mouse_cycle_markers.rds", package="scran"))
+
+set.seed(123)
+sce <- SingleCellExperiment(assays=list(counts = exprs, logcounts = log2(exprs+1)))
+cc <- cyclone(sce, pairs=mmu.pairs)
+
+table(cc$phase)
+
+# saving the result as a numeric vector
+cyc_bu_pre <- as.vector(unlist(lapply(c(table(cc$phases)), as.numeric)))
+```
+
+### Running Seurat
+
+```{r seurat}
+# add cyclone prediction to metadata
+M$cyclone <- cc$phases
+
+# create a seurat object
+sdata <- CreateSeuratObject(raw.data = exprs, min.cells = 3, min.genes = 200,
+    project = "CC",is.expr=1,meta.data=M)
+
+sdata <- NormalizeData(sdata)
+sdata <- ScaleData(sdata)
+sdata <- FindVariableGenes(object = sdata, mean.function = ExpMean, 
+                           dispersion.function = LogVMR, x.low.cutoff = 0.2, 
+                           x.high.cutoff = 10, y.cutoff = 0.5)
+
+# run PCA
+sdata <- RunPCA(object = sdata, pc.genes = sdata@var.genes, do.print = FALSE)  
+# predict cell cycle
+sdata <- CellCycleScoring(sdata, g2m.genes = cc.genes.mouse$g2m.genes, 
+                          s.genes = cc.genes.mouse$s.genes)
+
+table(sdata@meta.data$Phase)
+
+# saving the result as a numeric vector
+seu_bu_pre <- as.vector(unlist(lapply(c(table(sdata@meta.data$Phase)), as.numeric)))
+```
+
+### Running reCAT
+
+# Clears out all genes not present as marker genes
+
+```{r reCAT_preprocess}
+
+# Log transforms the data as get_test requires log-transformed data 
+exprs <- log(exprs+1)
+
+source("reCAT_master/R/get_test_exp.R")
+exprs <- get_test_exp(exprs)
+dim(exprs)
+```
+
+# Orders the data using the TSP algorithm
+
+```{r reCAT_order}
+source("reCAT_master/R/get_ordIndex.R")
+# exprs = input matrix, 3 = no. threads used for processing, can be increased on cluster
+nthread =3
+
+ordIndex <- get_ordIndex(exprs, nthread)
+```
+
+# Get cell-cycle scores using the Bayes-scores & Mean-scores algorithm
+
+```{r reCAT_scores}
+source("reCAT_master/R/get_score.R")
+score_result <- get_score(t(exprs))
+score_result$bayes_score
+score_result$mean_score
+# cat(score_result$bayes_score, file="bayes_score.txt")
+# cat(score_result$mean_score, file="mean_score.txt")
+```
+
+# Plots the score values 
+
+```{r reCAT_plot_scores}
+source("reCAT_master/R/plot.R")
+plot_bayes(score_result$bayes_score, ordIndex)
+plot_mean(score_result$mean_score, ordIndex)
+```
+
+
+```{r reCAT_rdata}
+source("reCAT_master/R/get_rdata.R")
+rdata <- get_rdata(score_result, ordIndex)
+View(rdata)
+```
+
+# Finds the start of the cell-cycle for time-series scoring
+
+```{r reCAT_get_start}
+source("reCAT_master/R/get_start.R")
+cycle_start = get_start(score_result, ordIndex)
+print(cycle_start)
+```
+
+```{r reCAT_get_myord}
+source("reCAT_master/R/get_myord.R")
+myord = get_myord(cycle_start, ordIndex)
+```
+
+# Finds the cell cycle phases
+
+```{r reCAT_find_phase}
+source("reCAT_master/R/get_hmm.R")
+cls_num <- 3
+hmm_result <- get_hmm_order(bayes_score = score_result$bayes_score, mean_score = score_result$mean_score, ordIndex = ordIndex, cls_num = cls_num, myord = myord, rdata = rdata)
+
+g1_c = sum(hmm_result == 1)
+s_c = sum(hmm_result == 2)
+g2m_c = sum(hmm_result == 3)
+phase_counts = t(data.frame(g1_c, g2m_c, s_c))
+write.table(phase_counts,"recat_phase_output.txt",sep="\t",col.names = FALSE, row.names=FALSE)
+View(phase_counts)
+```
+
+## Leng *et al* data (2015)
+Section for running the Leng *et al* data through the programs.
+
+### Load the Leng *et al* data
+The dataset consists of 247 cells with cell cycle annotation 91 cells in G1, 80 in S and 76 in G2M.
+
+The data can be downloaded from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE64016
+
+```{r data}
+#reading in datafile
+exprs_le <- read.csv("/Users/Lovisa Lundeberg/Documents/scrna-cell-cycle/r_scripts/lovisa/embryonic_data/GSE64016_H1andFUCCI_normalized_EC.csv", header = TRUE, sep = ",", quote = "\"")
+
+#saving the columns that are labeled (215-461) into new matrix
+exprs_le <- exprs_le[,c(1,215:461)]
+
+#adding rownames that are in the first column of the original data
+rownames(exprs_le) <- paste(exprs_le[,c(1)])
+exprs_le <- exprs_le[,-1]
+```
+
+Translating the HGNC symbols that the data have originally to ensembl IDs and adding it as a column in the matrix. This is needed in order to run Cyclone.
+```{r database}
+# getting ensembl ids based on the hgnc symbols in the file
+library(biomaRt)
+mart = useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+ens_id_hum = getBM(filters = "hgnc_symbol", attributes =       c("ensembl_gene_id","hgnc_symbol"), values=rownames(exprs_le), mart = mart)
+
+# removing all genes that lack ensembl id or have multiple ones
+ensCount =  table(ens_id_hum$ensembl_gene_id) 
+one2one = names(which(ensCount == 1))
+ensCount =  table(ens_id_hum$hgnc_symbol) 
+one2oneGene = names(which(ensCount == 1))
+
+ens_id_hum =  ens_id_hum[ens_id_hum$ensembl_gene_id %in% one2one, ]
+ens_id_hum =  ens_id_hum[ens_id_hum$hgnc_symbol %in% one2oneGene, ]
+exprs_le = exprs_le[rownames(exprs_le) %in% ens_id_hum$hgnc_symbol, ]
+exprs_le = exprs_le[ens_id_hum$hgnc_symbol, ]
+
+
+#adding ensembl IDs as the first column in the data, removing NAs in the data
+exprs_le <- cbind(ensembl_id=ens_id_hum$ensembl_gene_id,exprs_le)
+exprs_le <- na.omit(exprs_le)
+```
+
+### Filtering out cells of low quality
+
+```{r filter}
+# filter out cells with low nDet
+nDet <- colSums(exprs_le[,-1]>1)
+hist(nDet,n=100)
+keep <- which(nDet>4000)
+
+exprs_le<-exprs_le[,keep]
+```
+
+### Running cyclone
+
+```{r cyclone, warning=F}
+#adding ensembl ids as rownames
+exprs_id <- exprs_le[,-1]
+rownames(exprs_id) <- paste(exprs_le[,1]) 
+
+exprs_id <- data.matrix(exprs_id)
+mmu.pairs <- readRDS(system.file("exdata", "human_cycle_markers.rds", package="scran"))
+
+# running cyclone
+set.seed(123)
+sce_leng <- SingleCellExperiment(assays=list(counts = exprs_id, logcounts = log2(exprs_id+1)))
+cc <- cyclone(sce_leng, pairs=mmu.pairs)
+
+table(cc$phase)
+
+# saving the result in a numeric vector
+cyc_le_pre <- as.vector(unlist(lapply(c(table(cc$phases)), as.numeric)))
+```
+
+### Running Seurat
+
+```{r seurat}
+#editing the matrix to have hgnc symbols
+exprs_hgnc <- exprs_le[,-1]
+
+sdata <- CreateSeuratObject(raw.data = exprs_hgnc, min.cells = 3, min.genes = 200,
+    project = "testseurat",is.expr=1,meta.data=NULL)
+
+sdata <- NormalizeData(sdata)
+sdata <- ScaleData(sdata)
+sdata <- FindVariableGenes(object = sdata, mean.function = ExpMean, 
+                           dispersion.function = LogVMR, x.low.cutoff = 0.2, 
+                           x.high.cutoff = 10, y.cutoff = 0.5)
+
+
+# run PCA
+sdata <- RunPCA(object = sdata, pc.genes = sdata@var.genes, do.print = FALSE)  
+# predict cell cycle
+sdata <- CellCycleScoring(sdata, g2m.genes = cc.genes$g2m.genes, 
+                          s.genes = cc.genes$s.genes)
+
+table(sdata@meta.data$Phase)
+seu_le_pre <- as.vector(unlist(lapply(c(table(sdata@meta.data$Phase)), as.numeric)))
+```
+
+### Running reCAT
+
+# Clears out all genes not present as marker genes
+
+```{r reCAT_preprocess}
+
+# Log transforms the data as get_test requires log-transformed data 
+exprs_le <- log(exprs_le+1)
+
+source("reCAT_master/R/get_test_exp.R")
+exprs_le <- get_test_exp(exprs_le)
+dim(exprs_le)
+```
+
+# Orders the data using the TSP algorithm
+
+```{r reCAT_order}
+source("reCAT_master/R/get_ordIndex.R")
+# exprs_le = input matrix, 3 = no. threads used for processing, can be increased on cluster
+nthread =3
+
+ordIndex <- get_ordIndex(exprs_le, nthread)
+```
+
+# Get cell-cycle scores using the Bayes-scores & Mean-scores algorithm
+
+```{r reCAT_scores}
+source("reCAT_master/R/get_score.R")
+score_result <- get_score(t(exprs_le))
+score_result$bayes_score
+score_result$mean_score
+# cat(score_result$bayes_score, file="bayes_score.txt")
+# cat(score_result$mean_score, file="mean_score.txt")
+```
+
+# Plots the score values 
+
+```{r reCAT_plot_scores}
+source("reCAT_master/R/plot.R")
+plot_bayes(score_result$bayes_score, ordIndex)
+plot_mean(score_result$mean_score, ordIndex)
+```
+
+
+```{r reCAT_rdata}
+source("reCAT_master/R/get_rdata.R")
+rdata <- get_rdata(score_result, ordIndex)
+View(rdata)
+```
+
+# Finds the start of the cell-cycle for time-series scoring
+
+```{r reCAT_get_start}
+source("reCAT_master/R/get_start.R")
+cycle_start = get_start(score_result, ordIndex)
+print(cycle_start)
+```
+
+```{r reCAT_get_myord}
+source("reCAT_master/R/get_myord.R")
+myord = get_myord(cycle_start, ordIndex)
+```
+
+# Finds the cell cycle phases
+
+```{r reCAT_find_phase}
+source("reCAT_master/R/get_hmm.R")
+cls_num <- 3
+hmm_result <- get_hmm_order(bayes_score = score_result$bayes_score, mean_score = score_result$mean_score, ordIndex = ordIndex, cls_num = cls_num, myord = myord, rdata = rdata)
+
+g1_c = sum(hmm_result == 1)
+s_c = sum(hmm_result == 2)
+g2m_c = sum(hmm_result == 3)
+phase_counts = t(data.frame(g1_c, g2m_c, s_c))
+write.table(phase_counts,"recat_phase_output.txt",sep="\t",col.names = FALSE, row.names=FALSE)
+View(phase_counts)
+```
+
+## Sasagawa *et al* data (2013)
+Section for running the data from Sasagawa *et al*.
+
+### Load the Sasagawa *et al* data
+The data is a small dataset of 23 cells. The ES files with a clear cell annotation is used (G1, S and M). The annotation is 8 cells in G1, 7 in S and 8 in G2M.
+
+The data can be downloaded from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE42268. This is 23 txt files. In this code they are all put into a folder called "sasagawa" where all the txt files are loaded from.
+
+```{r data}
+mypath = "/Users/Lovisa Lundeberg/Documents/scrna-cell-cycle/r_scripts/lovisa/embryonic_data/sasagawa"
+setwd(mypath)
+
+# reading in the separate text files and putting them next to each other in a data frame
+txt_files_ls = list.files(path=mypath, pattern="*.txt")
+txt_files_df <- lapply(txt_files_ls, function(x) {read.table(file = x, header = T, sep ="")})
+exprs_sa <- do.call("cbind", lapply(txt_files_df, as.data.frame))
+
+# saving the ids
+id <- as.data.frame(exprs_sa[,1:2])
+
+# removing the rows with ids from the matrix
+exprs_sa <- exprs_sa[ ,-which(names(exprs_sa) %in% c("id", "gene.symbol"))]
+
+# adding the ids back into the matrix
+rownames(exprs_sa) <- paste(id[,1]) 
+exprs_sa <- cbind(hgnc_symbol=id[,2],exprs_sa)
+```
+
+### Filtering out cells of low quality
+
+```{r filter}
+# filter out cells with low nDet
+nDet <- colSums(exprs_sa[,-1]>1)
+hist(nDet,n=100)
+keep <- which(nDet>4000)
+
+exprs_sa <- exprs_sa[,keep]
+```
+
+### Running Cyclone
+
+```{r cyclone, warning=F}
+# editing the matrix to have only ensembl ids
+exprs_sa_id <- data.matrix(exprs_sa[,-1])
+mmu.pairs <- readRDS(system.file("exdata", "mouse_cycle_markers.rds", package="scran"))
+
+# running cyclone
+set.seed(123)
+sce_leng <- SingleCellExperiment(assays=list(counts = exprs_sa_id, logcounts = log2(exprs_sa_id+1)))
+cc <- cyclone(sce_leng, pairs=mmu.pairs)
+
+table(cc$phase)
+
+# saving the result as a numeric vector
+cyc_sa_pre <- as.vector(unlist(lapply(c(table(cc$phases)), as.numeric)))
+```
+
+### Running Seurat
+
+```{r Seurat}
+# create a seurat object
+sdata <- CreateSeuratObject(raw.data = exprs_sa_id, min.cells = 3, min.genes = 200,
+    project = "CC",is.expr=1,meta.data=NULL)
+
+sdata <- NormalizeData(sdata)
+sdata <- ScaleData(sdata)
+sdata <- FindVariableGenes(object = sdata, mean.function = ExpMean, 
+                           dispersion.function = LogVMR, x.low.cutoff = 0.2, 
+                           x.high.cutoff = 10, y.cutoff = 0.5)
+
+# run PCA
+sdata <- RunPCA(object = sdata, pc.genes = sdata@var.genes, do.print = FALSE)  
+# predict cell cycle
+sdata <- CellCycleScoring(sdata, g2m.genes = cc.genes.mouse$g2m.genes, 
+                          s.genes = cc.genes.mouse$s.genes)
+
+table(sdata@meta.data$Phase)
+
+# saving the result as a numeric vector
+seu_sa_pre <- as.vector(unlist(lapply(table(sdata@meta.data$Phase), as.numeric)))
+```
+
+## Evaluation
+This section is for evaluating the result of the programs. In order to run this section all programs have to have been run using all the datasets.
+
+### RMSE
+This section makes plots for each of the programs of the RMSE values. It is calculated with the result vectors and the annotation of the cells.
+
+```{r data}
+# creating vectors of the annotations
+bu_an <- c(95, 96, 81)
+le_an <- c(91, 76, 80)
+sa_an <- c(7, 8, 7)
+```
+
+Calculatin the RMSE value for the programs using all of the datasets.
+```{r RMSE}
+# function for calculating RMSE
+RMSE = function(m, o){
+  sqrt(mean((m - o)^2))
+}
+
+# calculating RMSE for cyclone
+RMSE_cyc <- c(RMSE(cyc_bu_pre, bu_an), RMSE(cyc_le_pre, le_an), RMSE(cyc_sa_pre, sa_an))
+ 
+# calculating RMSE for Seurat
+RMSE_seu <- c(RMSE(seu_bu_pre, bu_an), RMSE(seu_le_pre, le_an), RMSE(seu_sa_pre, sa_an))
+```
+
+Making barplots of the RMSE values.
+```{r plot}
+barplot(RMSE_seu, main = "Seurat", xlab ="Data", ylab="RMSE", names.arg=c("Buttner et al.","Leng et al.", "Sasagawa et al."), border="blue", density=c(10), col=c("purple","purple","purple"))
+
+
+barplot(RMSE_cyc, main = "Cyclone", xlab ="Data", ylab="RMSE", names.arg=c("Buttner et al.","Leng et al.", "Sasagawa et al."), border="blue", density=c(10), col=c("purple","purple","purple"))
+```
+
+### Running reCAT
+
+# Clears out all genes not present as marker genes
+
+```{r reCAT_preprocess}
+
+# Log transforms the data as get_test requires log-transformed data 
+exprs_sa <- log(exprs_sa+1)
+
+source("reCAT_master/R/get_test_exp.R")
+exprs_sa <- get_test_exp(exprs_sa)
+dim(exprs_sa)
+```
+
+# Orders the data using the TSP algorithm
+
+```{r reCAT_order}
+source("reCAT_master/R/get_ordIndex.R")
+# exprs_sa = input matrix, 3 = no. threads used for processing, can be increased on cluster
+nthread =3
+
+ordIndex <- get_ordIndex(exprs_sa, nthread)
+```
+
+# Get cell-cycle scores using the Bayes-scores & Mean-scores algorithm
+
+```{r reCAT_scores}
+source("reCAT_master/R/get_score.R")
+score_result <- get_score(t(exprs_sa))
+score_result$bayes_score
+score_result$mean_score
+# cat(score_result$bayes_score, file="bayes_score.txt")
+# cat(score_result$mean_score, file="mean_score.txt")
+```
+
+# Plots the score values 
+
+```{r reCAT_plot_scores}
+source("reCAT_master/R/plot.R")
+plot_bayes(score_result$bayes_score, ordIndex)
+plot_mean(score_result$mean_score, ordIndex)
+```
+
+
+```{r reCAT_rdata}
+source("reCAT_master/R/get_rdata.R")
+rdata <- get_rdata(score_result, ordIndex)
+View(rdata)
+```
+
+# Finds the start of the cell-cycle for time-series scoring
+
+```{r reCAT_get_start}
+source("reCAT_master/R/get_start.R")
+cycle_start = get_start(score_result, ordIndex)
+print(cycle_start)
+```
+
+```{r reCAT_get_myord}
+source("reCAT_master/R/get_myord.R")
+myord = get_myord(cycle_start, ordIndex)
+```
+
+# Finds the cell cycle phases
+
+```{r reCAT_find_phase}
+source("reCAT_master/R/get_hmm.R")
+cls_num <- 3
+hmm_result <- get_hmm_order(bayes_score = score_result$bayes_score, mean_score = score_result$mean_score, ordIndex = ordIndex, cls_num = cls_num, myord = myord, rdata = rdata)
+
+g1_c = sum(hmm_result == 1)
+s_c = sum(hmm_result == 2)
+g2m_c = sum(hmm_result == 3)
+phase_counts = t(data.frame(g1_c, g2m_c, s_c))
+write.table(phase_counts,"recat_phase_output.txt",sep="\t",col.names = FALSE, row.names=FALSE)
+View(phase_counts)
+```
