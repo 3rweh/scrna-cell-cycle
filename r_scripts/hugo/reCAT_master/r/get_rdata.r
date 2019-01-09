@@ -8,15 +8,12 @@ get_rdata <- function(score_result, ordIndex)
 	s_score <- bayes_cell$S.score
 	g2m_score <- bayes_cell$G2M.score
 	
-	n_1 = 10
-	n_2 = 4
-	
 	get_max_reg <- function(input)
-	# Returns the max segment region out of 10 for the input vector 
+	# Returns the max segment region out of 6 for the input vector 
 	{
 		val = -Inf
 		pos = 0
-		inp_splt <- split(input, cut(seq(input), n_1, labels = FALSE))
+		inp_splt <- split(input, cut(seq(input), 6, labels = FALSE))
 		reg_vec <- c()
 		for (i in 1:length(inp_splt))
 		{
@@ -32,8 +29,11 @@ get_rdata <- function(score_result, ordIndex)
 	{
 		val = Inf
 		pos = 0
+		n_1 = 6
+		n_2 = 6
 		
-		# Splits all vectors into n_1 regions
+		
+		# Splits all vectors into fours region
 		inp_splt <- split(inp, cut(seq(inp), n_1, labels = FALSE))
 		v_2_splt <- split(v_2, cut(seq(v_2), n_1, labels = FALSE))
 		v_3_splt <- split(v_3, cut(seq(v_3), n_1, labels = FALSE))
@@ -43,34 +43,28 @@ get_rdata <- function(score_result, ordIndex)
 		v_2_b = v_2_splt[[reg]]
 		v_3_b = v_3_splt[[reg]]
 		
-		if (50 >= length(ordIndex))
+		# Splits the best region into 6 segments
+		inp_b_splt <- split(inp_b, cut(seq(inp_b), n_2, labels = FALSE))
+		v_2_b_splt <- split(v_2_b, cut(seq(v_2_b), n_2, labels = FALSE))
+		v_3_b_splt <- split(v_3_b, cut(seq(v_3_b), n_2, labels = FALSE)) 
+		
+		
+		
+		d_vec <- c()
+		for (i in 1:length(inp_b_splt))
 		{
-		  return (as.numeric(inp_b))
-		} else {
-		
-		  # Splits the best region into n_2 segments
-		  inp_b_splt <- split(inp_b, cut(seq(inp_b), n_2, labels = FALSE))
-		  v_2_b_splt <- split(v_2_b, cut(seq(v_2_b), n_2, labels = FALSE))
-		  v_3_b_splt <- split(v_3_b, cut(seq(v_3_b), n_2, labels = FALSE)) 
-		
-		
-		
-		  d_vec <- c()
-		  for (i in 1:length(inp_b_splt))
-		  {
-			  # Calculates euclidian distance for each section
-			  inp_b_num = as.numeric(inp_b_splt[[i]])
-			  v_2_b_num = as.numeric(v_2_b_splt[[i]])
-			  v_3_b_num = as.numeric(v_3_b_splt[[i]])
+			# Calculates euclidian distance for each section
+			inp_b_num = as.numeric(inp_b_splt[[i]])
+			v_2_b_num = as.numeric(v_2_b_splt[[i]])
+			v_3_b_num = as.numeric(v_3_b_splt[[i]])
 			
-			  d1 = sqrt(sum((inp_b_num - v_2_b_num) ^ 2))
-			  d2 = sqrt(sum((inp_b_num - v_3_b_num) ^ 2))
-			  d_tot = d1+d2
-			  d_vec <- append(d_vec, d_tot) 
-		  }
-		  max_reg <- which.max(d_vec)
-		  return (as.numeric(inp_b_splt[[max_reg]]))
+			d1 = sqrt(sum((inp_b_num - v_2_b_num) ^ 2))
+			d2 = sqrt(sum((inp_b_num - v_3_b_num) ^ 2))
+			d_tot = d1+d2
+			d_vec <- append(d_vec, d_tot) 
 		}
+		max_reg <- which.max(d_vec)
+		return (as.numeric(inp_b_splt[[max_reg]]))
 	}
 	
 	g1_r <- get_max_reg(g1_score)
