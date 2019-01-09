@@ -148,22 +148,17 @@ get_hmm_order <- function(bayes_score, mean_score, ordIndex, cls_num, myord, rda
   #save(transPro,ndresult,mypi,obval,M=cls_num,file="C:/experiment/BW_test.RData")  
   iter_max = 30
   myresult = myBW(A = transPro, nd_para = ndresult, mypi = mypi, ob_value = obval, iter_max = iter_max)
-  
-  # Modified by Hugo swenson, 2018-12-25
+   
   rs1 = myviterbi(obval = obval, transProb = myresult$transProb, ndresult = myresult$nd, mypi = myresult$mypi, M = cls_num)
-  
-  # Returns the last elements in rmat and then orders them, returning the index number based on the largest size   
+    
   nowr = order(rs1$rmat[length(ordIndex),])[cls_num]
   rr = c(nowr)
-  # Extracts the cell-cycle phase from the column determined through nowr, then updates nowr based on the value found in pmat
   for (i in (length(ordIndex)-1):1)
   {
     rr = c(rr,rs1$pmat[i,nowr])
     nowr = rs1$pmat[i,nowr]
   }
-  # Reverses rr
   rr <- rev(rr)
-  # Orders the cell cycle phase results from 1 to 3 (for 3 phases, ie: from 1 to 3)
   rr[1] = order(rs1$rmat[1,])[cls_num]
 
   return(rr)
