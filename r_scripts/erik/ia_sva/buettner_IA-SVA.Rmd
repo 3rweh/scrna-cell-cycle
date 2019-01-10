@@ -1,23 +1,16 @@
 ---
-title: "Detecting cell-cycle stage difference in glioblastoma cells"
-author: "Donghyung Lee"
+title: "Detecting cell-cycle stage difference in Buettner mESC cells cells"
+author: "Donghyung Lee, modified by Erik Hedman"
 date: "`r Sys.Date()`"
-output: 
-  rmarkdown::html_vignette:
-    toc: true
-vignette: >
-  %\VignetteIndexEntry{"Detecting cell-cycle stage difference in glioblastoma cells"}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+output: html_document
 ---
 
 
 Here, we illustrate how to use the iasva package to detect cell cycle stage
 difference within single cell RNA sequencing data. We use single cell RNA
-sequencing (scRNA-Seq) data obtained from human glioblastoma samples
-([Petel et. al., 2014](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4123637/)).
-This dataset is included in a R data package ("iasvaExamples") containing data
-examples for IA-SVA (https://github.com/dleelab/iasvaExamples). 
+sequencing (scRNA-Seq) data obtained from Mus musculus mESC samples
+([Scialdone et. al 2015](https://www.ncbi.nlm.nih.gov/pubmed/25599176)).
+Other human glioblastoma samples can be found in a R data package ("iasvaExamples") containing data examples for IA-SVA (https://github.com/dleelab/iasvaExamples). 
 To install the package, follow the instruction provided in the GitHub page.
 
 ## Install packages
@@ -46,6 +39,7 @@ library(corrplot)
 library(DescTools) #pcc i.e., Pearson's contingency coefficient
 library(RColorBrewer)
 library(SummarizedExperiment)
+library(MultiAssayExperiment)
 library(vioplot)
 color.vec <- brewer.pal(3, "Set1")
 
@@ -58,6 +52,9 @@ normalize <- function(counts)
 ```
 
 ## Load the Buettner single cell RNA-Seq data
+From the Conquer database (http://imlspenticton.uzh.ch:3838/conquer/) the Buettner dataset was fetched:
+
+1	EMTAB2805 (PMID 25599176)	Buettner2015 Mus musculus	mESC in different cell cycle stages	288	SMARTer C1	full-length
 ```{r load_data, echo=TRUE}
 buettner.data <- readRDS("/Users/erikh/Desktop/git/scrna-cell-cycle/embryonic_data/EMTAB2805.rds")
 
@@ -80,7 +77,6 @@ dim(buet_exprs)
 ```
 
 ## Filter out clearly low quality cells from Buettner data
-
 Clearly some outlier cells on negative PC1 with low number of genes with pca using full dataset.
 Mainly S-phase cells, even if most S-phase cells have a high median expression.
 
@@ -109,9 +105,7 @@ It is well known that the number of detected genes in each cell explains
 a very large portion of variability in scRNA-Seq data 
 ([Hicks et. al. 2015 BioRxiv](http://biorxiv.org/content/early/2015/08/25/025528),
 [McDavid et. al. 2016 Nature Biotechnology](http://www.nature.com/nbt/journal/v34/n6/full/nbt.3498.html)).
-Frequently, the first principal component of log-transformed scRNA-Seq read counts is highly correlated
-with the number of detected genes (e.g., r > 0.9). Here, we calculate the number of detected genes 
-for glioblastoma cells, which will be used as an known factor in the IA-SVA analyses. 
+Frequently, the first principal component of log-transformed scRNA-Seq read counts is highly correlated with the number of detected genes (e.g., r > 0.9). Here, we calculate the number of detected genes for Mus musculus mESC cells, which will be used as an known factor in the IA-SVA analyses. 
 ```{r num_detected_genes, echo=TRUE, fig.width=7, fig.height=4}
 Num_Detected_Genes_buet <- colSums(buet_exprs>0)
 Geo_Lib_buet <- colSums(log(buet_exprs+1))
@@ -125,7 +119,7 @@ cor(Geo_Lib_buet, pc1_buet)
 ```
 
 ## Run IA-SVA
-Here, we run IA-SVA using Geo_Lib_Size as a known factor and identify five hidden factors. 
+Here, we run IA-SVA using Geo_Lib_Size as a known factor and identify seven hidden factors. 
 SVs are plotted in a pairwise fashion to uncover which SVs can seperate cells. 
 ```{r run_iasva, echo=TRUE, fig.width= 7, fig.height=6}
 set.seed(3445)
@@ -216,6 +210,7 @@ cor(Geo_Lib_buet, iasva.sv_buet[,1:7])
 corrplot(cor(iasva.sv_buet))
 ```
 ## Cell type assignment using scran R package
+Here cyclone is used to assign cell cycle phases. Additional assigning is then applied, not mandatory. Vioplot visualizes how well the different SVs separate cell cycle phases. 
 ```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
 mmu.pairs <- readRDS(system.file("exdata", 
                                 "mouse_cycle_markers.rds", package="scran"))
@@ -261,7 +256,7 @@ title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV7)")
 ```
 
 ## KS-test on the three cell cycle phases and the different SVs
-The SV with the lowest KS value will be used in next section. The other SVs are ignored. The SV with lowest value should be the one best separating the cell cycle phases using the vioplot in previous section.
+The SV with the lowest KS value will be used in next section. The other SVs are ignored. The SV with lowest value should be the one best separating the cell cycle phases using the vioplot in previous section. Code need to be optimized.
 ```{r }
 #KS-test between G1 and G2M
 ks_G1_G2M_1 <- ks.test(G1_buet_SV[,1],G2M_buet_SV[,1])
@@ -327,7 +322,7 @@ ks_SV7 <- a7*b7*c7
 
 ## Find marker genes for the detected heterogeneity (SV2).
 Here, using the find_markers() function we find marker genes that are significantly
-associated with SV2 (multiple testing adjusted p-value < 0.05, 
+associated with SV2, since this had the lowest KS-value (multiple testing adjusted p-value < 0.05,
 default significance cutoff, and R-squared value > 0.4).
 ```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
 # try different R2 thresholds
@@ -370,6 +365,7 @@ write.table(gene.list.long_buet_SV2, file = paste0("/Users/erikh/Desktop/git/scr
 ```
 
 ## Correlation between all SVs and the geometric library size
+
 ```{r SV1_geometric_lib_size, echo=TRUE}
 cor(Num_Detected_Genes_buet, iasva.sv_buet[,c(1:7)])
 cor(Geo_Lib_buet, iasva.sv_buet[,c(1:7)])
