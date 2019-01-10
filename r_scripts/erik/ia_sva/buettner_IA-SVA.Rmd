@@ -370,3 +370,31 @@ write.table(gene.list.long_buet_SV2, file = paste0("/Users/erikh/Desktop/git/scr
 cor(Num_Detected_Genes_buet, iasva.sv_buet[,c(1:7)])
 cor(Geo_Lib_buet, iasva.sv_buet[,c(1:7)])
 ```
+
+
+Tries to compare gene lists 
+```{r}
+res_G1 <- rep(0, length(iasva_genelist.long_SV2))
+where <- match( names(mmu_markergenes), names(iasva_genelist.long_SV2) )
+res_G1[where] <- iasva_genelist.long_SV2 / mmu_markergenes[where]
+names(res_G1) <- names(iasva_genelist.long_SV2)
+res_G1
+
+res_G1 <- rep(0, length(iasva_genelist.long_SV2))
+where <- match( names(mmu_markergenes), names(iasva_genelist.long_SV2) )
+res_G1[ where ] <- iasva_genelist.long_SV2 / mmu_markergenes[where]
+names(res_G1) <- names(iasva_genelist.long_SV2)
+res_G1
+
+res_S <- rep(0, length(iasva_genelist.long_SV2))
+where <- match( names(iasva_genelist.long_SV2), names(mmu_markergenes) )
+res_S[ where ] <- iasva_genelist.long_SV2 / mmu_markergenes[where]
+names(res_S) <- names(mmu_markergenes)
+res_S
+
+res_G2M <- rep(0, length(iasva_genelist.long_SV2))
+where <- match( names(mmuG2M), names(iasva_genelist.long_SV2) )
+res_G2M[ where ] <- mmuG2M / iasva_genelist.long_SV2[where]
+names(res_G2M) <- names(iasva_genelist.long_SV2)
+res_G2M
+```
