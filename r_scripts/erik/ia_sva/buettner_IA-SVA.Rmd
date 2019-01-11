@@ -2,14 +2,16 @@
 title: "Detecting cell-cycle stage difference in Buettner mESC cells cells"
 author: "Donghyung Lee, modified by Erik Hedman"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 
 Here, we illustrate how to use the iasva package to detect cell cycle stage
 difference within single cell RNA sequencing data. We use single cell RNA
 sequencing (scRNA-Seq) data obtained from Mus musculus mESC samples
-([Scialdone et. al 2015](https://www.ncbi.nlm.nih.gov/pubmed/25599176)).
+([Scialdone *et al.* 2015](https://www.ncbi.nlm.nih.gov/pubmed/25599176)).
 Other human glioblastoma samples can be found in a R data package ("iasvaExamples") containing data examples for IA-SVA (https://github.com/dleelab/iasvaExamples). 
 To install the package, follow the instruction provided in the GitHub page.
 
@@ -342,13 +344,13 @@ names(cluster.col_buet) <- as.vector(levels(Cluster_buet_2))
 anno.colors_buet <- list(Cluster=cluster.col_buet)
 anno.colors_buet
 
-pheatmap(log(marker.counts.SV2_buet+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
-         annotation_colors = anno.colors_buet)
+#pheatmap(log(marker.counts.SV2_buet+1), show_colnames =FALSE, 
+#         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+#         annotation_colors = anno.colors_buet)
 
-pheatmap(log(marker.counts.SV2.long_buet+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
-         annotation_colors = anno.colors_buet)
+#pheatmap(log(marker.counts.SV2.long_buet+1), show_colnames =FALSE, 
+#         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+#         annotation_colors = anno.colors_buet)
 
 gene.list_buet_SV2 <- rownames(marker.counts.SV2_buet)
 write.table(gene.list_buet_SV2, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_buet_SV2.txt"),
@@ -378,13 +380,13 @@ names(cluster.col_buet) <- as.vector(levels(Cluster_buet_3))
 anno.colors_buet <- list(Cluster=cluster.col_buet)
 anno.colors_buet
 
-pheatmap(log(marker.counts.SV3_buet+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
-         annotation_colors = anno.colors_buet)
+#pheatmap(log(marker.counts.SV3_buet+1), show_colnames =FALSE, 
+#         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+#         annotation_colors = anno.colors_buet)
 
-pheatmap(log(marker.counts.SV3.long_buet+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
-         annotation_colors = anno.colors_buet)
+#pheatmap(log(marker.counts.SV3.long_buet+1), show_colnames =FALSE, 
+#         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+#         annotation_colors = anno.colors_buet)
 
 gene.list_buet_SV3 <- rownames(marker.counts.SV3_buet)
 write.table(gene.list_buet_SV3, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_buet_SV3.txt"),
@@ -414,13 +416,13 @@ names(cluster.col_buet) <- as.vector(levels(Cluster_buet_5))
 anno.colors_buet <- list(Cluster=cluster.col_buet)
 anno.colors_buet
 
-pheatmap(log(marker.counts.SV5_buet+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
-         annotation_colors = anno.colors_buet)
+#pheatmap(log(marker.counts.SV5_buet+1), show_colnames =FALSE, 
+#         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+#         annotation_colors = anno.colors_buet)
 
-pheatmap(log(marker.counts.SV5.long_buet+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
-         annotation_colors = anno.colors_buet)
+#pheatmap(log(marker.counts.SV5.long_buet+1), show_colnames =FALSE, 
+#         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+#         annotation_colors = anno.colors_buet)
 
 gene.list_buet_SV5 <- rownames(marker.counts.SV5_buet)
 write.table(gene.list_buet_SV5, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_buet_SV5.txt"),
@@ -464,7 +466,7 @@ save(cc.genes.mouse, file=savefile)
 ## A comparison between the gene lists from Cyclone and Seurat with the different SVs
 Match the gene list used in mmu.pairs for Cyclone (G1=12052 paired genes, S=6459 paired genes, G2M=9981 paired genes) and Seurat (S=40 and G2M=52) with the long gene lists from different SVs.
 ```{r}
-#unlists the mmu.pairs and creat unique lists of genes for G1, S and G2M
+#unlists the mmu.pairs and create unique lists of genes for G1, S and G2M
 mmu_vec_an_G1 <- unique(unlist(mmu.pairs["G1"]))
 mmu_vec_an_S <- unique(unlist(mmu.pairs["S"]))
 mmu_vec_an_G2M <- unique(unlist(mmu.pairs["G2M"]))
@@ -500,18 +502,12 @@ ccg2m_match_sv5 <- sort(intersect(mmu_vec_an_G2M, gene.list.long_buet_SV5))
 seus_match_sv5 <- sort(intersect(seurat_vec_an_S, gene.list.long_buet_SV5))
 seug2m_match_sv5 <- sort(intersect(seurat_vec_an_G2M, gene.list.long_buet_SV5))
 
-
-length(ccg2m_match_sv2)
+#lists the matched G2M genes from cyclone and seurat for sv2, sv3, and sv5
 list(ccg2m_match_sv2)
-length(seug2m_match_sv2)
 list(seug2m_match_sv2)
-length(ccg2m_match_sv3)
 list(ccg2m_match_sv3)
-length(seug2m_match_sv3)
 list(seug2m_match_sv3)
-length(ccg2m_match_sv5)
 list(ccg2m_match_sv5)
-length(seug2m_match_sv5)
 list(seug2m_match_sv5)
 
 ```
