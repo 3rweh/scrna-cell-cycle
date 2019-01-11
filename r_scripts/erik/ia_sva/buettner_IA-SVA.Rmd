@@ -209,25 +209,19 @@ cor(Num_Detected_Genes_buet, iasva.sv_buet[,1:7])
 cor(Geo_Lib_buet, iasva.sv_buet[,1:7])
 corrplot(cor(iasva.sv_buet))
 ```
+
 ## Cell type assignment using scran R package
-Here cyclone is used to assign cell cycle phases. Additional assigning is then applied, not mandatory. Vioplot visualizes how well the different SVs separate cell cycle phases. 
+Here cyclone is used to assign cell cycle phases. Vioplot visualizes how well the different SVs separate the cell cycle phases. 
 ```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
 mmu.pairs <- readRDS(system.file("exdata", 
                                 "mouse_cycle_markers.rds", package="scran"))
 assigned_buet <- cyclone(norm_buet, pairs=mmu.pairs)
 head(assigned_buet$scores)
 table(assigned_buet$phases)
-phase_buet <- rep("S", ncol(norm_buet))
-phase_buet[assigned_buet$scores$G1 > 0.5 & assigned_buet$scores$G2M < 0.5] <- "G1"
-phase_buet[assigned_buet$scores$G1 < 0.5 & assigned_buet$scores$G2M > 0.5] <- "G2M"
-phase_buet[assigned_buet$scores$G1 < 0.5 & assigned_buet$scores$G2M < 0.5] <- "S"
-phase_buet[assigned_buet$scores$G1 > 0.5 & assigned_buet$scores$G2M > 0.5] <- "Unknown"
-table(phase_buet)
 
-G1_buet_SV <- iasva.sv_buet[phase_buet=="G1",]
-S_buet_SV <- iasva.sv_buet[phase_buet=="S",]
-G2M_buet_SV <- iasva.sv_buet[phase_buet=="G2M",]
-Unknown_buet_SV <- iasva.sv_buet[phase_buet=="Unknown",]
+G1_buet_SV <- iasva.sv_buet[assigned_buet$phases=="G1",]
+S_buet_SV <- iasva.sv_buet[assigned_buet$phases=="S",]
+G2M_buet_SV <- iasva.sv_buet[assigned_buet$phases=="G2M",]
 
 corrplot(cor(G1_buet_SV))
 corrplot(cor(S_buet_SV))
@@ -317,13 +311,14 @@ ks_SV4 <- a4*b4*c4
 ks_SV5 <- a5*b5*c5
 ks_SV6 <- a6*b6*c6
 ks_SV7 <- a7*b7*c7
-
+ks_vec <- data.frame(ks_SV1, ks_SV2, ks_SV3, ks_SV4, ks_SV5, ks_SV6, ks_SV7)
+ks_vec
 ```
 
 ## Find marker genes for the detected heterogeneity (SV2).
 Here, using the find_markers() function we find marker genes that are significantly
 associated with SV2, since this had the lowest KS-value (multiple testing adjusted p-value < 0.05,
-default significance cutoff, and R-squared value > 0.4).
+default significance cutoff, and R-squared value > 0.3).
 ```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
 # try different R2 thresholds
 pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/Clustering_analyses_figure3_sv2_buet.pdf"))
@@ -331,9 +326,9 @@ r2.results_buet <- study_R2(summ_exp_buet, iasva.sv_buet, selected.svs=2, no.clu
 dev.off()
 
 marker.counts.SV2_buet <- find_markers(summ_exp_buet, 
-                            as.matrix(iasva.sv_buet[,c(2)]), rsq.cutoff = 0.45)
+                            as.matrix(iasva.sv_buet[,c(2)]), rsq.cutoff = 0.35)
 marker.counts.SV2.long_buet <- find_markers(summ_exp_buet, 
-                              as.matrix(iasva.sv_buet[,c(2)]), rsq.cutoff = 0.4)
+                              as.matrix(iasva.sv_buet[,c(2)]), rsq.cutoff = 0.3)
 nrow(marker.counts.SV2_buet) 
 nrow(marker.counts.SV2.long_buet)
 
@@ -364,37 +359,130 @@ write.table(gene.list.long_buet_SV2, file = paste0("/Users/erikh/Desktop/git/scr
 
 ```
 
-## Correlation between all SVs and the geometric library size
+SV3
+```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
+marker.counts.SV3_buet <- find_markers(summ_exp_buet, 
+                            as.matrix(iasva.sv_buet[,c(3)]), rsq.cutoff = 0.35)
+marker.counts.SV3.long_buet <- find_markers(summ_exp_buet, 
+                              as.matrix(iasva.sv_buet[,c(3)]), rsq.cutoff = 0.3)
+nrow(marker.counts.SV3_buet) 
+nrow(marker.counts.SV3.long_buet)
 
-```{r SV1_geometric_lib_size, echo=TRUE}
-cor(Num_Detected_Genes_buet, iasva.sv_buet[,c(1:7)])
-cor(Geo_Lib_buet, iasva.sv_buet[,c(1:7)])
+anno.col2_buet <- data.frame(Cluster=Cluster_buet_3, SV1=iasva.sv_buet[,3])
+rownames(anno.col2_buet) <- colnames(marker.counts.SV3_buet)
+head(anno.col2_buet)
+
+cluster.col_buet <- color.vec[1:2]
+names(cluster.col_buet) <- as.vector(levels(Cluster_buet_3))
+anno.colors_buet <- list(Cluster=cluster.col_buet)
+anno.colors_buet
+
+pheatmap(log(marker.counts.SV3_buet+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+         annotation_colors = anno.colors_buet)
+
+pheatmap(log(marker.counts.SV3.long_buet+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+         annotation_colors = anno.colors_buet)
+
+gene.list_buet_SV3 <- rownames(marker.counts.SV3_buet)
+write.table(gene.list_buet_SV3, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_buet_SV3.txt"),
+            col.names =F, row.names = F, quote = F)
+
+gene.list.long_buet_SV3 <- rownames(marker.counts.SV3.long_buet)
+write.table(gene.list.long_buet_SV3, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_buet_SV3.txt"),
+            col.names =F, row.names = F, quote = F)
+
 ```
 
+SV5
+```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
+marker.counts.SV5_buet <- find_markers(summ_exp_buet, 
+                            as.matrix(iasva.sv_buet[,c(5)]), rsq.cutoff = 0.35)
+marker.counts.SV5.long_buet <- find_markers(summ_exp_buet, 
+                              as.matrix(iasva.sv_buet[,c(5)]), rsq.cutoff = 0.3)
+nrow(marker.counts.SV5_buet) 
+nrow(marker.counts.SV5.long_buet)
 
-Tries to compare gene lists 
+anno.col2_buet <- data.frame(Cluster=Cluster_buet_5, SV1=iasva.sv_buet[,5])
+rownames(anno.col2_buet) <- colnames(marker.counts.SV5_buet)
+head(anno.col2_buet)
+
+cluster.col_buet <- color.vec[1:2]
+names(cluster.col_buet) <- as.vector(levels(Cluster_buet_5))
+anno.colors_buet <- list(Cluster=cluster.col_buet)
+anno.colors_buet
+
+pheatmap(log(marker.counts.SV5_buet+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+         annotation_colors = anno.colors_buet)
+
+pheatmap(log(marker.counts.SV5.long_buet+1), show_colnames =FALSE, 
+         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+         annotation_colors = anno.colors_buet)
+
+gene.list_buet_SV5 <- rownames(marker.counts.SV5_buet)
+write.table(gene.list_buet_SV5, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_buet_SV5.txt"),
+            col.names =F, row.names = F, quote = F)
+
+gene.list.long_buet_SV5 <- rownames(marker.counts.SV5.long_buet)
+write.table(gene.list.long_buet_SV5, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_buet_SV5.txt"),
+            col.names =F, row.names = F, quote = F)
+
+```
+
+## A comparison between the gene lists from Cyclone and Seurat with the different SVs
+Match the gene list used in mmu.pairs for Cyclone (G1=12052 paired genes, S=6459 paired genes, G2M=9981 paired genes) and Seurat (S=40 and G2M=52) with the long gene lists from different SVs.
 ```{r}
-res_G1 <- rep(0, length(iasva_genelist.long_SV2))
-where <- match( names(mmu_markergenes), names(iasva_genelist.long_SV2) )
-res_G1[where] <- iasva_genelist.long_SV2 / mmu_markergenes[where]
-names(res_G1) <- names(iasva_genelist.long_SV2)
-res_G1
+#unlists the mmu.pairs and creat unique lists of genes for G1, S and G2M
+mmu_vec_an_G1 <- unique(unlist(mmu.pairs["G1"]))
+mmu_vec_an_S <- unique(unlist(mmu.pairs["S"]))
+mmu_vec_an_G2M <- unique(unlist(mmu.pairs["G2M"]))
+#unlists the annotation used in Seurat
+seurat_vec_an_S <- unique(unlist(cc.genes.mouse["s.genes"]))
+seurat_vec_an_G2M <- unique(unlist(cc.genes.mouse["g2m.genes"]))
 
-res_G1 <- rep(0, length(iasva_genelist.long_SV2))
-where <- match( names(mmu_markergenes), names(iasva_genelist.long_SV2) )
-res_G1[ where ] <- iasva_genelist.long_SV2 / mmu_markergenes[where]
-names(res_G1) <- names(iasva_genelist.long_SV2)
-res_G1
+#Matching the lists using intersect()
+#sv2: ks value 7.816618e-45
+#cyclone
+ccg1_match_sv2 <- sort(intersect(mmu_vec_an_G1, gene.list.long_buet_SV2))
+ccs_match_sv2 <- sort(intersect(mmu_vec_an_S, gene.list.long_buet_SV2))
+ccg2m_match_sv2 <- sort(intersect(mmu_vec_an_G2M, gene.list.long_buet_SV2))
+#seurat
+seus_match_sv2 <- sort(intersect(seurat_vec_an_S, gene.list.long_buet_SV2))
+seug2m_match_sv2 <- sort(intersect(seurat_vec_an_G2M, gene.list.long_buet_SV2))
 
-res_S <- rep(0, length(iasva_genelist.long_SV2))
-where <- match( names(iasva_genelist.long_SV2), names(mmu_markergenes) )
-res_S[ where ] <- iasva_genelist.long_SV2 / mmu_markergenes[where]
-names(res_S) <- names(mmu_markergenes)
-res_S
+#sv3: ks value 3.484951e-12
+#cyclone
+ccg1_match_sv3 <- sort(intersect(mmu_vec_an_G1, gene.list.long_buet_SV3))
+ccs_match_sv3 <- sort(intersect(mmu_vec_an_S, gene.list.long_buet_SV3))
+ccg2m_match_sv3 <- sort(intersect(mmu_vec_an_G2M, gene.list.long_buet_SV3))
+#seurat
+seus_match_sv3 <- sort(intersect(seurat_vec_an_S, gene.list.long_buet_SV3))
+seug2m_match_sv3 <- sort(intersect(seurat_vec_an_G2M, gene.list.long_buet_SV3))
 
-res_G2M <- rep(0, length(iasva_genelist.long_SV2))
-where <- match( names(mmuG2M), names(iasva_genelist.long_SV2) )
-res_G2M[ where ] <- mmuG2M / iasva_genelist.long_SV2[where]
-names(res_G2M) <- names(iasva_genelist.long_SV2)
-res_G2M
+#sv5 ks value 2.922879e-36
+#cyclone
+ccg1_match_sv5 <- sort(intersect(mmu_vec_an_G1, gene.list.long_buet_SV5))
+ccs_match_sv5 <- sort(intersect(mmu_vec_an_S, gene.list.long_buet_SV5))
+ccg2m_match_sv5 <- sort(intersect(mmu_vec_an_G2M, gene.list.long_buet_SV5))
+#seurat
+seus_match_sv5 <- sort(intersect(seurat_vec_an_S, gene.list.long_buet_SV5))
+seug2m_match_sv5 <- sort(intersect(seurat_vec_an_G2M, gene.list.long_buet_SV5))
+
+
+length(ccg2m_match_sv2)
+list(ccg2m_match_sv2)
+length(seug2m_match_sv2)
+list(seug2m_match_sv2)
+length(ccg2m_match_sv3)
+list(ccg2m_match_sv3)
+length(seug2m_match_sv3)
+list(seug2m_match_sv3)
+length(ccg2m_match_sv5)
+list(ccg2m_match_sv5)
+length(seug2m_match_sv5)
+list(seug2m_match_sv5)
+
 ```
+Here we get the matched genes in the predicted G2M phase for three different SVs mapping against cyclone (631 genes in G2M) and Seurat (52 genes in G2M). 40 Cyclone hits and 20 Seurat hits for sv2, 7 Cyclone hits and 1 Seurat hit for sv3, 40 Cyclone hits and 10 Seurat hits for sv5. Interesting note: 17 genes are shared between Cyclone and Seurat for sv2, 1 gene is shared between Cyclone and Seurat for sv3, 8 genes are shared between Cyclone and Seurat for sv5.
