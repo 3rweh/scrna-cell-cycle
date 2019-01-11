@@ -31,6 +31,7 @@ library(iasva)
 library(iasvaExamples)
 library(sva)
 library(SCnorm)
+library(Seurat)
 library(scran)
 library(scater)
 library(Rtsne)
@@ -319,7 +320,7 @@ ks_vec
 Here, using the find_markers() function we find marker genes that are significantly
 associated with SV2, since this had the lowest KS-value (multiple testing adjusted p-value < 0.05,
 default significance cutoff, and R-squared value > 0.3).
-```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
+```{r find_markers_SV2, echo=TRUE, fig.width=6, fig.height=16}
 # try different R2 thresholds
 pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/Clustering_analyses_figure3_sv2_buet.pdf"))
 r2.results_buet <- study_R2(summ_exp_buet, iasva.sv_buet, selected.svs=2, no.clusters=2)
@@ -360,7 +361,7 @@ write.table(gene.list.long_buet_SV2, file = paste0("/Users/erikh/Desktop/git/scr
 ```
 
 SV3
-```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
+```{r find_markers_SV3, echo=TRUE, fig.width=6, fig.height=16}
 marker.counts.SV3_buet <- find_markers(summ_exp_buet, 
                             as.matrix(iasva.sv_buet[,c(3)]), rsq.cutoff = 0.35)
 marker.counts.SV3.long_buet <- find_markers(summ_exp_buet, 
@@ -396,7 +397,7 @@ write.table(gene.list.long_buet_SV3, file = paste0("/Users/erikh/Desktop/git/scr
 ```
 
 SV5
-```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
+```{r find_markers_SV5, echo=TRUE, fig.width=6, fig.height=16}
 marker.counts.SV5_buet <- find_markers(summ_exp_buet, 
                             as.matrix(iasva.sv_buet[,c(5)]), rsq.cutoff = 0.35)
 marker.counts.SV5.long_buet <- find_markers(summ_exp_buet, 
@@ -428,6 +429,35 @@ write.table(gene.list_buet_SV5, file = paste0("/Users/erikh/Desktop/git/scrna-ce
 gene.list.long_buet_SV5 <- rownames(marker.counts.SV5.long_buet)
 write.table(gene.list.long_buet_SV5, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_buet_SV5.txt"),
             col.names =F, row.names = F, quote = F)
+
+```
+
+## Adding of Seurat gene list for comparison
+```{r convert_names}
+savefile = "seurat_cc_genes_mouse.Rdata"
+if (file.exists(savefile)){
+  load(savefile)
+}else{
+
+# Load human ensembl attributes
+human = biomaRt::useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+# Load mouse ensembl attributes
+mouse = biomaRt::useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+
+hsa2mmEnsembl <- function(x,mouse,human){
+  # Link both datasets and retrieve mouse genes from the human genes
+  genes.list = biomaRt::getLDS(attributes = c("hgnc_symbol"), filters = "hgnc_symbol", values = x , mart = human, attributesL = c("mgi_symbol","ensembl_gene_id"), martL = mouse, uniqueRows = T)
+  # Get unique names of genes 
+  mouse.gene.list <- unique(genes.list[, 3])
+  return(mouse.gene.list)
+}
+
+# load data from Seurat package
+data(cc.genes)
+# convert to mouse ensembl IDs
+cc.genes.mouse <- lapply(cc.genes, hsa2mmEnsembl, mouse,human)
+save(cc.genes.mouse, file=savefile)
+}
 
 ```
 
