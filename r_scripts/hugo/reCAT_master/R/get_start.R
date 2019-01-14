@@ -1,33 +1,106 @@
-source("reCAT_master/R/get_hmm.R")
-library(doParallel)
+get_start <- function(score_result, ordIndex)
+{	
+  # Loads the score results as a separate variable, uses bayes score due to better G2M separation
+  # Arranges these scores with respect to the ordIndex
+  bayes_cell <- score_result$bayes_score[ordIndex, ]
+  # Stores each phase score as a new parameter
+  g1_score <- bayes_cell$G1.score
+  s_score <- bayes_cell$S.score
+  g2m_score <- bayes_cell$G2M.score
+  
+  n_1 <- 6
+  
+  get_min_reg <- function(input)
+    # Returns the max segment region out of n1 for the input vector 
+  {
+    val <- -Inf
+    pos <- 0
+    inp_splt <- split(input, cut(seq(input), n_1, labels = FALSE))
+    reg_vec <- c()
+    for (i in 1:length(inp_splt))
+    {
+      inp_num <- as.numeric(inp_splt[[i]])
+      inp_mean <- mean(inp_num)
+      reg_vec <- append(reg_vec, inp_mean)
+    }
+    min_reg <- which.min(reg_vec)
+    return (min_reg)
+  }
+  
+  get_start_p <- function(g1_score, s_score, g2m_score)
+  {
+      # Splits all vectors into n_1 regions
+      g1_splt <- split(g1_score, cut(seq(g1_score), n_1, labels = FALSE))
+      s_splt <- split(s_score, cut(seq(s_score), n_1, labels = FALSE))
+      g2m_splt <- split(g2m_score, cut(seq(g2m_score), n_1, labels = FALSE))
+    
+      g2m_minr <- get_min_reg(g2m_score)
+      
+      g1_vec <- c()
+      s_vec <- c()
+      g2m_vec <- c()
+      for(i in 1:g2m_minr){
+        g1_num <- as.numeric(g1_splt[[i]])
+        s_num <- as.numeric(s_splt[[i]])
+        g2m_num <- as.numeric(g2m_splt[[i]])
+        
+        d_1 <- sqrt(sum((g1_num - s_num) ^ 2))
+        d_2 <- 2*sqrt(sum((g1_num - g2m_num) ^ 2))
+        d_3 <- sqrt(sum((s_num - g2m_num) ^ 2)) 
+        d_tot <- d_1 + d_2 + d_3
+        g1_vec <- append(g1_vec, g1_num) 
+        s_vec <- append(s_vec, s_num) 
+        g2m_vec <- append(g2m_vec, g2m_num) 
+      }
+      
+      g1_vec <- as.numeric(g1_vec) 
+      s_vec <- as.numeric(s_vec) 
+      g2m_vec <- as.numeric(g2m_vec) 
+    
+      # Walks through the min-region, checking if the s-score is larger then that of the g1_score. We know that when the g1_score passes that of the s-score, we have reached the start of the cycle
+      for ( i in 1:length(g1_vec)-8){
+        g1_p_s <- g1_vec[i]
+        s_p_s <- s_vec[i]
+        g2m_p_s <- g2m_vec[i]
+        
+        g1_p_s_1 <- g1_vec[i+1]
+        s_p_s_1 <- s_vec[i+1]
+        g2m_p_s_1 <- g2m_vec[i+1]
+       
+        g1_p_s_2 <- g1_vec[i+2]
+        s_p_s_2 <- s_vec[i+2]
+        g2m_p_s_2 <- g2m_vec[i+2]
+        
+        g1_p_s_3 <- g1_vec[i+3]
+        s_p_s_3 <- s_vec[i+3]
+        g2m_p_s_3 <- g2m_vec[i+3]
+        
+        g1_p_s_4 <- g1_vec[i+4]
+        s_p_s_4 <- s_vec[i+4]
+        g2m_p_s_4 <- g2m_vec[i+4]
+       
+        g1_p_s_8 <- g1_vec[i+8]
+        s_p_s_8 <- s_vec[i+8]
+        g2m_p_s_8 <- g2m_vec[8]
+        
+        g1_p_m <- mean(g1_p_s + g1_p_s_1 + g1_p_s_2 + g1_p_s_3 + g1_p_s_4 )
+        s_p_m <- mean(s_p_s + s_p_s_1 + s_p_s_2 + s_p_s_3 + s_p_s_4)
+        g2m_p_m <- mean(g2m_p_s + g2m_p_s_1 + g2m_p_s_2 + g2m_p_s_3 + g2m_p_s_4)
+        
+        if(g1_p_s > s_p_s && g1_p_s > g2m_p_s && g1_p_s_1 > s_p_s_1 && g1_p_s_1 > g2m_p_s_1 && g1_p_m > s_p_m && g1_p_m > g2m_p_m){
+          start_pos <- i
+          break
+        }else if(i == length(g1_s_reg)-8){
+          start_pos <- i+8
+        }
+      }
+      return(g1_vec[[start_pos]])
+  }
 
-get_start <- function(bayes_score, mean_score, ordIndex, cls_num, rdata, nthread = 3)
-{
-	cl <- makeCluster(nthread)
-	registerDoParallel(cl)
-	le = length(ordIndex)
-	start = 0
-	p = -Inf
-	
-	for(i in 1:le)
-	{
-	  if (i == le)
-	  {
-	    myord = c(le:1)
-	  }
-		myord = c(i:1, length(ordIndex):i)
-		myord <- head(myord, -1)
-		re = get_hmm_order(bayes_score, mean_score, ordIndex, cls_num, myord, rdata)
-		re <- as.data.frame(re)
-		if (max(re) > p)
-		{
-		  start = i
-		  p = max(re)
-		}
-	}
-
-	#p = apply(log_lk, 2, max)
-	#start = which(p == max(p))
-
-	return(start)
+  start_p <- get_start_p(g1_score, s_score, g2m_score)
+  
+  # Matches region-vector against the original vector
+  start = match(start_p, g1_score)
+  
+  return(start)
 }

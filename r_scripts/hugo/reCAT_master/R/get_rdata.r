@@ -100,9 +100,12 @@ get_rdata <- function(score_result, ordIndex, cycle_start)
 		    inp_b <- inp_b[1:ind_s]
 		    v_2_b <- v_2_b[1:ind_s]
 		    v_3_b <- v_3_b[1:ind_s]
+		    
+		    n_2 = floor(length(inp_b)/20)
+		  } else {
+		    n_2 = ceiling(length(inp_b)/20)
 		  }
-		  
-		  n_2 = ceiling(length(inp_b)/20)
+
 		  
 		  # Splits the best region into n_2 segments
 		  inp_b_splt <- split(inp_b, cut(seq(inp_b), n_2, labels = FALSE))
