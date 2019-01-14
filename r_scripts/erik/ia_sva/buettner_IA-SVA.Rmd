@@ -1,23 +1,18 @@
 ---
-title: "Detecting cell-cycle stage difference in glioblastoma cells"
-author: "Donghyung Lee"
+title: "Detecting cell-cycle stage difference in Buettner mESC cells cells"
+author: "Donghyung Lee, modified by Erik Hedman"
 date: "`r Sys.Date()`"
-output: 
-  rmarkdown::html_vignette:
-    toc: true
-vignette: >
-  %\VignetteIndexEntry{"Detecting cell-cycle stage difference in glioblastoma cells"}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 
 Here, we illustrate how to use the iasva package to detect cell cycle stage
 difference within single cell RNA sequencing data. We use single cell RNA
-sequencing (scRNA-Seq) data obtained from human glioblastoma samples
-([Petel et. al., 2014](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4123637/)).
-This dataset is included in a R data package ("iasvaExamples") containing data
-examples for IA-SVA (https://github.com/dleelab/iasvaExamples). 
+sequencing (scRNA-Seq) data obtained from Mus musculus mESC samples
+([Scialdone *et al.* 2015](https://www.ncbi.nlm.nih.gov/pubmed/25599176)).
+Other human glioblastoma samples can be found in a R data package ("iasvaExamples") containing data examples for IA-SVA (https://github.com/dleelab/iasvaExamples). 
 To install the package, follow the instruction provided in the GitHub page.
 
 ## Install packages
@@ -38,6 +33,7 @@ library(iasva)
 library(iasvaExamples)
 library(sva)
 library(SCnorm)
+library(Seurat)
 library(scran)
 library(scater)
 library(Rtsne)
@@ -46,6 +42,7 @@ library(corrplot)
 library(DescTools) #pcc i.e., Pearson's contingency coefficient
 library(RColorBrewer)
 library(SummarizedExperiment)
+library(MultiAssayExperiment)
 library(vioplot)
 color.vec <- brewer.pal(3, "Set1")
 
@@ -58,6 +55,9 @@ normalize <- function(counts)
 ```
 
 ## Load the Buettner single cell RNA-Seq data
+From the Conquer database (http://imlspenticton.uzh.ch:3838/conquer/) the Buettner dataset was fetched:
+
+1	EMTAB2805 (PMID 25599176)	Buettner2015 Mus musculus	mESC in different cell cycle stages	288	SMARTer C1	full-length
 ```{r load_data, echo=TRUE}
 buettner.data <- readRDS("/Users/erikh/Desktop/git/scrna-cell-cycle/embryonic_data/EMTAB2805.rds")
 
@@ -80,7 +80,6 @@ dim(buet_exprs)
 ```
 
 ## Filter out clearly low quality cells from Buettner data
-
 Clearly some outlier cells on negative PC1 with low number of genes with pca using full dataset.
 Mainly S-phase cells, even if most S-phase cells have a high median expression.
 
@@ -109,9 +108,7 @@ It is well known that the number of detected genes in each cell explains
 a very large portion of variability in scRNA-Seq data 
 ([Hicks et. al. 2015 BioRxiv](http://biorxiv.org/content/early/2015/08/25/025528),
 [McDavid et. al. 2016 Nature Biotechnology](http://www.nature.com/nbt/journal/v34/n6/full/nbt.3498.html)).
-Frequently, the first principal component of log-transformed scRNA-Seq read counts is highly correlated
-with the number of detected genes (e.g., r > 0.9). Here, we calculate the number of detected genes 
-for glioblastoma cells, which will be used as an known factor in the IA-SVA analyses. 
+Frequently, the first principal component of log-transformed scRNA-Seq read counts is highly correlated with the number of detected genes (e.g., r > 0.9). Here, we calculate the number of detected genes for Mus musculus mESC cells, which will be used as an known factor in the IA-SVA analyses. 
 ```{r num_detected_genes, echo=TRUE, fig.width=7, fig.height=4}
 Num_Detected_Genes_buet <- colSums(buet_exprs>0)
 Geo_Lib_buet <- colSums(log(buet_exprs+1))
@@ -125,7 +122,7 @@ cor(Geo_Lib_buet, pc1_buet)
 ```
 
 ## Run IA-SVA
-Here, we run IA-SVA using Geo_Lib_Size as a known factor and identify five hidden factors. 
+Here, we run IA-SVA using Geo_Lib_Size as a known factor and identify seven hidden factors. 
 SVs are plotted in a pairwise fashion to uncover which SVs can seperate cells. 
 ```{r run_iasva, echo=TRUE, fig.width= 7, fig.height=6}
 set.seed(3445)
@@ -134,7 +131,6 @@ summ_exp_buet <- SummarizedExperiment(assays = buet_exprs)
 iasva.res_buet <- iasva(summ_exp_buet, as.matrix(mod_buet[,-1]),verbose=FALSE, permute=FALSE, num.sv=7)
 iasva.sv_buet <- iasva.res_buet$sv
 
-# Cluster based on SVA7
 Cluster_buet_7 <- as.factor(iasva.sv_buet[,7] < 0.1) 
 levels(Cluster_buet_7)=c("Cluster1","Cluster2")
 table(Cluster_buet_7)
@@ -143,10 +139,9 @@ pairs(iasva.sv_buet[,1:7], main="IA-SVA_7", pch=21, col=color.vec[Cluster_buet_7
       bg=color.vec[Cluster_buet_7], oma=c(4,4,6,14))
 legend("right", levels(Cluster_buet_7), fill=color.vec, bty="n")
 
-plot(iasva.sv_buet[,c(1,7)], main="IA-SVA_7", pch=21, xlab="SV1", ylab="SV7",
+plot(iasva.sv_buet[,c(1,7)], main="IA-SVA", pch=21, xlab="SV1", ylab="SV7",
      col=color.vec[Cluster_buet_7], bg=color.vec[Cluster_buet_7])
 
-# Cluster based on SVA6
 Cluster_buet_6 <- as.factor(iasva.sv_buet[,6] < 0.1) 
 levels(Cluster_buet_6)=c("Cluster1","Cluster2")
 table(Cluster_buet_6)
@@ -155,10 +150,9 @@ pairs(iasva.sv_buet[,1:7], main="IA-SVA_6", pch=21, col=color.vec[Cluster_buet_6
       bg=color.vec[Cluster_buet_6], oma=c(4,4,6,14))
 legend("right", levels(Cluster_buet_6), fill=color.vec, bty="n")
 
-plot(iasva.sv_buet[,c(1,6)], main="IA-SVA_6", pch=21, xlab="SV1", ylab="SV6",
+plot(iasva.sv_buet[,c(1,6)], main="IA-SVA", pch=21, xlab="SV1", ylab="SV6",
      col=color.vec[Cluster_buet_6], bg=color.vec[Cluster_buet_6])
 
-# Cluster based on SVA5
 Cluster_buet_5 <- as.factor(iasva.sv_buet[,5] < 0.1) 
 levels(Cluster_buet_5)=c("Cluster1","Cluster2")
 table(Cluster_buet_5)
@@ -167,10 +161,9 @@ pairs(iasva.sv_buet[,1:7], main="IA-SVA_5", pch=21, col=color.vec[Cluster_buet_5
       bg=color.vec[Cluster_buet_5], oma=c(4,4,6,14))
 legend("right", levels(Cluster_buet_5), fill=color.vec, bty="n")
 
-plot(iasva.sv_buet[,c(1,5)], main="IA-SVA_5", pch=21, xlab="SV1", ylab="SV5",
+plot(iasva.sv_buet[,c(1,5)], main="IA-SVA", pch=21, xlab="SV1", ylab="SV5",
      col=color.vec[Cluster_buet_5], bg=color.vec[Cluster_buet_5])
 
-# Cluster based on SVA4
 Cluster_buet_4 <- as.factor(iasva.sv_buet[,4] < 0.1) 
 levels(Cluster_buet_4)=c("Cluster1","Cluster2")
 table(Cluster_buet_4)
@@ -179,10 +172,9 @@ pairs(iasva.sv_buet[,1:7], main="IA-SVA_4", pch=21, col=color.vec[Cluster_buet_4
       bg=color.vec[Cluster_buet_4], oma=c(4,4,6,14))
 legend("right", levels(Cluster_buet_4), fill=color.vec, bty="n")
 
-plot(iasva.sv_buet[,c(1,4)], main="IA-SVA_4", pch=21, xlab="SV1", ylab="SV4",
+plot(iasva.sv_buet[,c(1,4)], main="IA-SVA", pch=21, xlab="SV1", ylab="SV4",
      col=color.vec[Cluster_buet_4], bg=color.vec[Cluster_buet_4])
 
-# Cluster based on SVA3
 Cluster_buet_3 <- as.factor(iasva.sv_buet[,3] < 0.1) 
 levels(Cluster_buet_3)=c("Cluster1","Cluster2")
 table(Cluster_buet_3)
@@ -191,10 +183,9 @@ pairs(iasva.sv_buet[,1:7], main="IA-SVA_3", pch=21, col=color.vec[Cluster_buet_3
       bg=color.vec[Cluster_buet_3], oma=c(4,4,6,14))
 legend("right", levels(Cluster_buet_3), fill=color.vec, bty="n")
 
-plot(iasva.sv_buet[,c(1,3)], main="IA-SVA_3", pch=21, xlab="SV1", ylab="SV3",
+plot(iasva.sv_buet[,c(1,3)], main="IA-SVA", pch=21, xlab="SV1", ylab="SV3",
      col=color.vec[Cluster_buet_3], bg=color.vec[Cluster_buet_3])
 
-# Cluster based on SVA2
 Cluster_buet_2 <- as.factor(iasva.sv_buet[,2] < 0.1) 
 levels(Cluster_buet_2)=c("Cluster1","Cluster2")
 table(Cluster_buet_2)
@@ -203,10 +194,9 @@ pairs(iasva.sv_buet[,1:7], main="IA-SVA_2", pch=21, col=color.vec[Cluster_buet_2
       bg=color.vec[Cluster_buet_2], oma=c(4,4,6,14))
 legend("right", levels(Cluster_buet_2), fill=color.vec, bty="n")
 
-plot(iasva.sv_buet[,c(1,2)], main="IA-SVA_2", pch=21, xlab="SV1", ylab="SV2",
+plot(iasva.sv_buet[,c(1,2)], main="IA-SVA", pch=21, xlab="SV1", ylab="SV2",
      col=color.vec[Cluster_buet_2], bg=color.vec[Cluster_buet_2])
 
-# Cluster based on SVA1
 Cluster_buet_1 <- as.factor(iasva.sv_buet[,1] < 0.1) 
 levels(Cluster_buet_1)=c("Cluster1","Cluster2")
 table(Cluster_buet_1)
@@ -215,32 +205,26 @@ pairs(iasva.sv_buet[,1:7], main="IA-SVA_1", pch=21, col=color.vec[Cluster_buet_1
       bg=color.vec[Cluster_buet_1], oma=c(4,4,6,14))
 legend("right", levels(Cluster_buet_1), fill=color.vec, bty="n")
 
-plot(iasva.sv_buet[,c(1,2)], main="IA-SVA_1", pch=21, xlab="SV1", ylab="SV2",
+plot(iasva.sv_buet[,c(1,2)], main="IA-SVA", pch=21, xlab="SV1", ylab="SV2",
      col=color.vec[Cluster_buet_1], bg=color.vec[Cluster_buet_1])
 
-# Correlation between the number of detected genes/total library and the surrogate variables
 cor(Num_Detected_Genes_buet, iasva.sv_buet[,1:7])
 cor(Geo_Lib_buet, iasva.sv_buet[,1:7])
 corrplot(cor(iasva.sv_buet))
 ```
+
 ## Cell type assignment using scran R package
+Here cyclone is used to assign cell cycle phases. Vioplot visualizes how well the different SVs separate the cell cycle phases. 
 ```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
 mmu.pairs <- readRDS(system.file("exdata", 
                                 "mouse_cycle_markers.rds", package="scran"))
 assigned_buet <- cyclone(norm_buet, pairs=mmu.pairs)
 head(assigned_buet$scores)
 table(assigned_buet$phases)
-phase_buet <- rep("S", ncol(norm_buet))
-phase_buet[assigned_buet$scores$G1 > 0.5 & assigned_buet$scores$G2M < 0.5] <- "G1"
-phase_buet[assigned_buet$scores$G1 < 0.5 & assigned_buet$scores$G2M > 0.5] <- "G2M"
-phase_buet[assigned_buet$scores$G1 < 0.5 & assigned_buet$scores$G2M < 0.5] <- "S"
-phase_buet[assigned_buet$scores$G1 > 0.5 & assigned_buet$scores$G2M > 0.5] <- "Unknown"
-table(phase_buet)
 
-G1_buet_SV <- iasva.sv_buet[phase_buet=="G1",]
-S_buet_SV <- iasva.sv_buet[phase_buet=="S",]
-G2M_buet_SV <- iasva.sv_buet[phase_buet=="G2M",]
-Unknown_buet_SV <- iasva.sv_buet[phase_buet=="Unknown",]
+G1_buet_SV <- iasva.sv_buet[assigned_buet$phases=="G1",]
+S_buet_SV <- iasva.sv_buet[assigned_buet$phases=="S",]
+G2M_buet_SV <- iasva.sv_buet[assigned_buet$phases=="G2M",]
 
 corrplot(cor(G1_buet_SV))
 corrplot(cor(S_buet_SV))
@@ -269,6 +253,7 @@ title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV7)")
 ```
 
 ## KS-test on the three cell cycle phases and the different SVs
+The SV with the lowest KS value will be used in next section. The other SVs are ignored. The SV with lowest value should be the one best separating the cell cycle phases using the vioplot in previous section. Code need to be optimized.
 ```{r }
 #KS-test between G1 and G2M
 ks_G1_G2M_1 <- ks.test(G1_buet_SV[,1],G2M_buet_SV[,1])
@@ -329,118 +314,201 @@ ks_SV4 <- a4*b4*c4
 ks_SV5 <- a5*b5*c5
 ks_SV6 <- a6*b6*c6
 ks_SV7 <- a7*b7*c7
-
+ks_vec <- data.frame(ks_SV1, ks_SV2, ks_SV3, ks_SV4, ks_SV5, ks_SV6, ks_SV7)
+ks_vec
 ```
 
-## Find marker genes for the detected heterogeneity (SV1).
+## Find marker genes for the detected heterogeneity (SV2).
 Here, using the find_markers() function we find marker genes that are significantly
-associated with SV1 (multiple testing adjusted p-value < 0.05, 
+associated with SV2, since this had the lowest KS-value (multiple testing adjusted p-value < 0.05,
 default significance cutoff, and R-squared value > 0.3).
-```{r find_markers_SV1, echo=TRUE, fig.width=6, fig.height=16}
+```{r find_markers_SV2, echo=TRUE, fig.width=6, fig.height=16}
 # try different R2 thresholds
-pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/Clustering_analyses_figure3_sv1_buet.pdf"))
+pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/Clustering_analyses_figure3_sv2_buet.pdf"))
 r2.results_buet <- study_R2(summ_exp_buet, iasva.sv_buet, selected.svs=2, no.clusters=2)
 dev.off()
 
-marker.counts.SV1_buet <- find_markers(summ_exp_buet, 
-                            as.matrix(iasva.sv_buet[,c(1)]), rsq.cutoff = 0.4)
-marker.counts.SV1.long_buet <- find_markers(summ_exp_buet, 
-                              as.matrix(iasva.sv_buet[,c(1)]), rsq.cutoff = 0.45)
-nrow(marker.counts.SV1_buet) 
-nrow(marker.counts.SV1.long_buet)
+marker.counts.SV2_buet <- find_markers(summ_exp_buet, 
+                            as.matrix(iasva.sv_buet[,c(2)]), rsq.cutoff = 0.35)
+marker.counts.SV2.long_buet <- find_markers(summ_exp_buet, 
+                              as.matrix(iasva.sv_buet[,c(2)]), rsq.cutoff = 0.3)
+nrow(marker.counts.SV2_buet) 
+nrow(marker.counts.SV2.long_buet)
 
-anno.col2_buet <- data.frame(Cluster=Cluster_buet, SV1=iasva.sv_buet[,1])
-rownames(anno.col2_buet) <- colnames(marker.counts.SV1_buet)
+anno.col2_buet <- data.frame(Cluster=Cluster_buet_2, SV1=iasva.sv_buet[,2])
+rownames(anno.col2_buet) <- colnames(marker.counts.SV2_buet)
 head(anno.col2_buet)
 
 cluster.col_buet <- color.vec[1:2]
-names(cluster.col_buet) <- as.vector(levels(Cluster_buet_1))
+names(cluster.col_buet) <- as.vector(levels(Cluster_buet_2))
 anno.colors_buet <- list(Cluster=cluster.col_buet)
 anno.colors_buet
 
-pheatmap(log(marker.counts.SV1_buet+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
-         annotation_colors = anno.colors_buet)
+#pheatmap(log(marker.counts.SV2_buet+1), show_colnames =FALSE, 
+#         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+#         annotation_colors = anno.colors_buet)
 
-pheatmap(log(marker.counts.SV1.long_buet+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
-         annotation_colors = anno.colors_buet)
+#pheatmap(log(marker.counts.SV2.long_buet+1), show_colnames =FALSE, 
+#         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+#         annotation_colors = anno.colors_buet)
 
-gene.list_buet_SV1 <- rownames(marker.counts.SV1_buet)
-write.table(gene.list_buet_SV1, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_buet_SV1.txt"),
+gene.list_buet_SV2 <- rownames(marker.counts.SV2_buet)
+write.table(gene.list_buet_SV2, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_buet_SV2.txt"),
             col.names =F, row.names = F, quote = F)
 
-gene.list.long_buet_SV1 <- rownames(marker.counts.SV7.long_buet)
-write.table(gene.list.long_buet_SV1, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_buet_SV1.txt"),
+gene.list.long_buet_SV2 <- rownames(marker.counts.SV2.long_buet)
+write.table(gene.list.long_buet_SV2, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_buet_SV2.txt"),
             col.names =F, row.names = F, quote = F)
 
 ```
 
-## Find marker genes for the detected heterogeneity (SV7).
-  
-```{r find_markers_SV7, echo=TRUE, fig.width=6, fig.height=16}
-marker.counts.SV7_buet <- find_markers(summ_exp_buet, 
-                            as.matrix(iasva.sv_buet[,c(7)]), rsq.cutoff = 0.4)
-marker.counts.SV7.long_buet <- find_markers(summ_exp_buet, 
-                              as.matrix(iasva.sv_buet[,c(7)]), rsq.cutoff = 0.3)
-nrow(marker.counts.SV7_buet) 
-nrow(marker.counts.SV7.long_buet)
+SV3
+```{r find_markers_SV3, echo=TRUE, fig.width=6, fig.height=16}
+marker.counts.SV3_buet <- find_markers(summ_exp_buet, 
+                            as.matrix(iasva.sv_buet[,c(3)]), rsq.cutoff = 0.35)
+marker.counts.SV3.long_buet <- find_markers(summ_exp_buet, 
+                              as.matrix(iasva.sv_buet[,c(3)]), rsq.cutoff = 0.3)
+nrow(marker.counts.SV3_buet) 
+nrow(marker.counts.SV3.long_buet)
 
-anno.col2_buet <- data.frame(Cluster=Cluster_buet, SV7=iasva.sv_buet[,7])
-rownames(anno.col2_buet) <- colnames(marker.counts.SV7_buet)
+anno.col2_buet <- data.frame(Cluster=Cluster_buet_3, SV1=iasva.sv_buet[,3])
+rownames(anno.col2_buet) <- colnames(marker.counts.SV3_buet)
 head(anno.col2_buet)
 
 cluster.col_buet <- color.vec[1:2]
-names(cluster.col_buet) <- as.vector(levels(Cluster_buet_7))
+names(cluster.col_buet) <- as.vector(levels(Cluster_buet_3))
 anno.colors_buet <- list(Cluster=cluster.col_buet)
 anno.colors_buet
 
-pheatmap(log(marker.counts.SV7_buet+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
-         annotation_colors = anno.colors_buet)
+#pheatmap(log(marker.counts.SV3_buet+1), show_colnames =FALSE, 
+#         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+#         annotation_colors = anno.colors_buet)
 
-pheatmap(log(marker.counts.SV7.long_buet+1), show_colnames =FALSE, 
-         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
-         annotation_colors = anno.colors_buet)
+#pheatmap(log(marker.counts.SV3.long_buet+1), show_colnames =FALSE, 
+#         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+#         annotation_colors = anno.colors_buet)
 
-gene.list_buet_SV7 <- rownames(marker.counts.SV7_buet)
-write.table(gene.list_buet_SV7, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_buet_SV7.txt"),
+gene.list_buet_SV3 <- rownames(marker.counts.SV3_buet)
+write.table(gene.list_buet_SV3, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_buet_SV3.txt"),
             col.names =F, row.names = F, quote = F)
 
-gene.list.long_buet_SV7 <- rownames(marker.counts.SV7.long_buet)
-write.table(gene.list.long_buet_SV7, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_buet_SV7.txt"),
+gene.list.long_buet_SV3 <- rownames(marker.counts.SV3.long_buet)
+write.table(gene.list.long_buet_SV3, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_buet_SV3.txt"),
             col.names =F, row.names = F, quote = F)
 
 ```
 
+SV5
+```{r find_markers_SV5, echo=TRUE, fig.width=6, fig.height=16}
+marker.counts.SV5_buet <- find_markers(summ_exp_buet, 
+                            as.matrix(iasva.sv_buet[,c(5)]), rsq.cutoff = 0.35)
+marker.counts.SV5.long_buet <- find_markers(summ_exp_buet, 
+                              as.matrix(iasva.sv_buet[,c(5)]), rsq.cutoff = 0.3)
+nrow(marker.counts.SV5_buet) 
+nrow(marker.counts.SV5.long_buet)
 
+anno.col2_buet <- data.frame(Cluster=Cluster_buet_5, SV1=iasva.sv_buet[,5])
+rownames(anno.col2_buet) <- colnames(marker.counts.SV5_buet)
+head(anno.col2_buet)
 
+cluster.col_buet <- color.vec[1:2]
+names(cluster.col_buet) <- as.vector(levels(Cluster_buet_5))
+anno.colors_buet <- list(Cluster=cluster.col_buet)
+anno.colors_buet
 
+#pheatmap(log(marker.counts.SV5_buet+1), show_colnames =FALSE, 
+#         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+#         annotation_colors = anno.colors_buet)
 
-## Correlation between SV1 and the geometric library size
-```{r SV1_geometric_lib_size, echo=TRUE}
-cor(Num_Detected_Genes_buet, iasva.sv_buet[,c(1:7)])
-cor(Geo_Lib_buet, iasva.sv_buet[,c(1:7)])
+#pheatmap(log(marker.counts.SV5.long_buet+1), show_colnames =FALSE, 
+#         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
+#         annotation_colors = anno.colors_buet)
+
+gene.list_buet_SV5 <- rownames(marker.counts.SV5_buet)
+write.table(gene.list_buet_SV5, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.short_buet_SV5.txt"),
+            col.names =F, row.names = F, quote = F)
+
+gene.list.long_buet_SV5 <- rownames(marker.counts.SV5.long_buet)
+write.table(gene.list.long_buet_SV5, file = paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/CC_genes.long_buet_SV5.txt"),
+            col.names =F, row.names = F, quote = F)
+
 ```
-By allowing correlation between factors, IA-SVA accurately detects the cell
-cycle stage difference, which is moderately correlated (|r|=0.44) with the geometric
-library size (the first principal component). Existing methods fail to detect
-the heterogeneity due to the orthogonality assumption.
 
-```{r  gen_Figure3ABCDE, fig.width=5, fig.height=8}
-pdf(file=paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/sc_output/Patel_Glioblastoma_MGH30_CellCycle_Figure3ABCD_buet.pdf"), width=5, height=8)
-layout(matrix(c(1,2,3,4,5,5), nrow=3, ncol=2, byrow=TRUE))
-plot(iasva.sv_buet[,c(1,7)], main="IA-SVA", pch=21, xlab="SV1", ylab="SV7",
-     col=color.vec[Cluster_buet], bg=color.vec[Cluster], oma=c(4,4,6,12))
-legend("topright", levels(Cluster_buet), border="white", fill=color.vec, bty="n")
-plot(pca.res[,1:2], main="PCA", pch=21, xlab="PC1", 
-     ylab="PC2", col=color.vec[Cluster], bg=color.vec[Cluster])
-plot(sva.res[,1:2], main="USVA", xlab="SV1", ylab="SV2",
-     pch=21, col=color.vec[Cluster], bg=color.vec[Cluster])
-plot(tsne.res$Y, main="tSNE", xlab="Dimension 1", 
-     ylab="Dimension 2", pch=21, col=color.vec[Cluster], bg=color.vec[Cluster])
-vioplot(G1, S, G2M, Unknown, names=c("G1", "S", "G2M", "Unknown"), 
-   col="gold")
-title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor")
-dev.off()
+## Adding of Seurat gene list for comparison
+```{r convert_names}
+savefile = "seurat_cc_genes_mouse.Rdata"
+if (file.exists(savefile)){
+  load(savefile)
+}else{
+
+# Load human ensembl attributes
+human = biomaRt::useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+# Load mouse ensembl attributes
+mouse = biomaRt::useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+
+hsa2mmEnsembl <- function(x,mouse,human){
+  # Link both datasets and retrieve mouse genes from the human genes
+  genes.list = biomaRt::getLDS(attributes = c("hgnc_symbol"), filters = "hgnc_symbol", values = x , mart = human, attributesL = c("mgi_symbol","ensembl_gene_id"), martL = mouse, uniqueRows = T)
+  # Get unique names of genes 
+  mouse.gene.list <- unique(genes.list[, 3])
+  return(mouse.gene.list)
+}
+
+# load data from Seurat package
+data(cc.genes)
+# convert to mouse ensembl IDs
+cc.genes.mouse <- lapply(cc.genes, hsa2mmEnsembl, mouse,human)
+save(cc.genes.mouse, file=savefile)
+}
+
 ```
+
+## A comparison between the gene lists from Cyclone and Seurat with the different SVs
+Match the gene list used in mmu.pairs for Cyclone (G1=12052 paired genes, S=6459 paired genes, G2M=9981 paired genes) and Seurat (S=40 and G2M=52) with the long gene lists from different SVs.
+```{r}
+#unlists the mmu.pairs and create unique lists of genes for G1, S and G2M
+mmu_vec_an_G1 <- unique(unlist(mmu.pairs["G1"]))
+mmu_vec_an_S <- unique(unlist(mmu.pairs["S"]))
+mmu_vec_an_G2M <- unique(unlist(mmu.pairs["G2M"]))
+#unlists the annotation used in Seurat
+seurat_vec_an_S <- unique(unlist(cc.genes.mouse["s.genes"]))
+seurat_vec_an_G2M <- unique(unlist(cc.genes.mouse["g2m.genes"]))
+
+#Matching the lists using intersect()
+#sv2: ks value 7.816618e-45
+#cyclone
+ccg1_match_sv2 <- sort(intersect(mmu_vec_an_G1, gene.list.long_buet_SV2))
+ccs_match_sv2 <- sort(intersect(mmu_vec_an_S, gene.list.long_buet_SV2))
+ccg2m_match_sv2 <- sort(intersect(mmu_vec_an_G2M, gene.list.long_buet_SV2))
+#seurat
+seus_match_sv2 <- sort(intersect(seurat_vec_an_S, gene.list.long_buet_SV2))
+seug2m_match_sv2 <- sort(intersect(seurat_vec_an_G2M, gene.list.long_buet_SV2))
+
+#sv3: ks value 3.484951e-12
+#cyclone
+ccg1_match_sv3 <- sort(intersect(mmu_vec_an_G1, gene.list.long_buet_SV3))
+ccs_match_sv3 <- sort(intersect(mmu_vec_an_S, gene.list.long_buet_SV3))
+ccg2m_match_sv3 <- sort(intersect(mmu_vec_an_G2M, gene.list.long_buet_SV3))
+#seurat
+seus_match_sv3 <- sort(intersect(seurat_vec_an_S, gene.list.long_buet_SV3))
+seug2m_match_sv3 <- sort(intersect(seurat_vec_an_G2M, gene.list.long_buet_SV3))
+
+#sv5 ks value 2.922879e-36
+#cyclone
+ccg1_match_sv5 <- sort(intersect(mmu_vec_an_G1, gene.list.long_buet_SV5))
+ccs_match_sv5 <- sort(intersect(mmu_vec_an_S, gene.list.long_buet_SV5))
+ccg2m_match_sv5 <- sort(intersect(mmu_vec_an_G2M, gene.list.long_buet_SV5))
+#seurat
+seus_match_sv5 <- sort(intersect(seurat_vec_an_S, gene.list.long_buet_SV5))
+seug2m_match_sv5 <- sort(intersect(seurat_vec_an_G2M, gene.list.long_buet_SV5))
+
+#lists the matched G2M genes from cyclone and seurat for sv2, sv3, and sv5
+list(ccg2m_match_sv2)
+list(seug2m_match_sv2)
+list(ccg2m_match_sv3)
+list(seug2m_match_sv3)
+list(ccg2m_match_sv5)
+list(seug2m_match_sv5)
+
+```
+Here we get the matched genes in the predicted G2M phase for three different SVs mapping against cyclone (631 genes in G2M) and Seurat (52 genes in G2M). 40 Cyclone hits and 20 Seurat hits for sv2, 7 Cyclone hits and 1 Seurat hit for sv3, 40 Cyclone hits and 10 Seurat hits for sv5. Interesting note: 17 genes are shared between Cyclone and Seurat for sv2, 1 gene is shared between Cyclone and Seurat for sv3, 8 genes are shared between Cyclone and Seurat for sv5.

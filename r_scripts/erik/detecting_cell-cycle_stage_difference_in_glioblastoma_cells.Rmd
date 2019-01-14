@@ -439,22 +439,22 @@ corrplot(cor(iasva.sv_MGH30))
 set.seed(3445)
 mod_MGH31 <- model.matrix(~Geo_Lib_MGH31)
 summ_exp_MGH31 <- SummarizedExperiment(assays = counts_MGH31)
-iasva.res_MGH31 <- iasva(summ_exp_MGH31, as.matrix(mod_MGH31[,-1]),verbose=FALSE, permute=FALSE, num.sv=5)
+iasva.res_MGH31 <- iasva(summ_exp_MGH31, as.matrix(mod_MGH31[,-1]),verbose=FALSE, permute=FALSE, num.sv=15)
 iasva.sv_MGH31 <- iasva.res_MGH31$sv
 
-Cluster_MGH31 <- as.factor(iasva.sv_MGH31[,1:5] < 0.1) 
+Cluster_MGH31 <- as.factor(iasva.sv_MGH31[,1] < 0.1) 
 levels(Cluster_MGH31)=c("Cluster1","Cluster2")
 table(Cluster_MGH31)
 
-pairs(iasva.sv_MGH31[,1:5], main="IA-SVA", pch=21, col=color.vec[Cluster_MGH31],
+pairs(iasva.sv_MGH31[,1:15], main="IA-SVA", pch=21, col=color.vec[Cluster_MGH31],
       bg=color.vec[Cluster_MGH31], oma=c(4,4,6,14))
 legend("right", levels(Cluster_MGH31), fill=color.vec, bty="n")
 
 plot(iasva.sv_MGH31[,1:2], main="IA-SVA", pch=21, xlab="SV1", ylab="SV2",
      col=color.vec[Cluster_MGH31], bg=color.vec[Cluster_MGH31])
 
-cor(Num_Detected_Genes_MGH31, iasva.sv_MGH31[,1:5])
-cor(Geo_Lib_MGH31, iasva.sv_MGH31[,1:5])
+cor(Num_Detected_Genes_MGH31, iasva.sv_MGH31[,1])
+cor(Geo_Lib_MGH31, iasva.sv_MGH31[,1])
 corrplot(cor(iasva.sv_MGH31))
 ```
 
