@@ -1,15 +1,15 @@
 ---
-title: "Detecting cell-cycle stage difference in Buettner mESC cells cells"
-author: "Donghyung Lee, modified by Erik Hedman"
+title: "Detecting cell-cycle stage difference in Buettner mESC cells"
+author: "Donghyung Lee, minor modifications by Erik Hedman"
 date: "`r Sys.Date()`"
 output:
   html_document: default
 ---
 
-**Clarification statement**. In this markdown script the parts Erik has added/modified are stated with his name. The original information is stated as "we". 
+**Clarification statement**. In this markdown script the parts I have modified are stated with my name, Erik. Some code blocks are provided by Johan Reimegård, my client. The original comments and code blocks are mostly stated as "we", and are then referred to Donghyung Lee and his team. 
 
 Here, we illustrate how to use the iasva package to detect cell cycle stage
-difference within single cell RNA sequencing data. Erik then extracted gene lists created with iasva and compared these lists with gene lists used in ([Cyclone](https://www.sciencedirect.com/science/article/pii/S1046202315300098)) and ([Seurat](https://www.nature.com/articles/nbt.4096)). Erik used single cell RNA
+difference within single cell RNA sequencing data. Erik then extracted gene lists created with iasva and compared these lists with gene lists used in [Cyclone](https://www.sciencedirect.com/science/article/pii/S1046202315300098) and [Seurat](https://www.nature.com/articles/nbt.4096). Erik used single cell RNA
 sequencing (scRNA-Seq) data obtained from Mus musculus mESC samples
 ([Scialdone *et al.* 2015](https://www.ncbi.nlm.nih.gov/pubmed/25599176)).
 Other human glioblastoma samples can be found in a R data package ("iasvaExamples") containing data examples for IA-SVA (https://github.com/dleelab/iasvaExamples). 
@@ -64,7 +64,7 @@ From the Conquer database (http://imlspenticton.uzh.ch:3838/conquer/) the Buettn
 
 1	EMTAB2805 (PMID 25599176)	Buettner2015 Mus musculus	mESC in different cell cycle stages	288	SMARTer C1	full-length
 
-This code block was provided by our client Johan Reimegård.
+This code block was provided by the client Johan Reimegård.
 
 ```{r load_data, echo=TRUE}
 buettner.data <- readRDS("/Users/erikh/Desktop/git/scrna-cell-cycle/embryonic_data/EMTAB2805.rds")
@@ -92,7 +92,7 @@ dim(buet_exprs)
 Clearly some outlier cells on negative PC1 with low number of genes with pca using full dataset.
 Mainly S-phase cells, even if most S-phase cells have a high median expression.
 
-This code block was provided by our client Johan Reimegård.
+This code block was provided by the client Johan Reimegård.
 
 ```{r filter}
 # filter out cells with low nDet
@@ -109,7 +109,7 @@ dim(buet_exprs)
 
 ## Normalization for Buettner data
 
-This code block was provided by our client Johan Reimegård.
+This code block was provided by the client Johan Reimegård.
 
 ```{r normalization, fig.width=8, fig.height=6}
 ## count-depth relationship for all genes
@@ -232,7 +232,7 @@ corrplot(cor(iasva.sv_buet))
 
 ## Cell type assignment using scran R package
 
-Here cyclone is used to assign cell cycle phases. The correlation plots explain how correlated each cell cycle phase is for each SV. It is one plot for G1, one for S, and one for G2M. Vioplot visualizes how well the different SVs separate the cell cycle phases all together. 
+Here cyclone is used to assign cell cycle phases. The correlation plots explain how correlated each cell cycle phase is for each SV. One plot for G1, one for S, and one for G2M. Vioplot visualizes how well the different SVs separate the cell cycle phases all together. 
 
 ```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
 mmu.pairs <- readRDS(system.file("exdata", 
@@ -528,4 +528,4 @@ list(ccg2m_match_sv5)
 list(seug2m_match_sv5)
 
 ```
-Here Erik presentss the matched genes in the predicted G2M phase for three different SVs mapping against cyclone (631 genes in G2M) and Seurat (52 genes in G2M). 40 Cyclone hits and 20 Seurat hits for sv2, 7 Cyclone hits and 1 Seurat hit for sv3, 40 Cyclone hits and 10 Seurat hits for sv5. Interesting note: 17 G2M genes are shared between Cyclone and Seurat for sv2, 1 G2M gene is shared between Cyclone and Seurat for sv3, 8 G2M genes are shared between Cyclone and Seurat for sv5. Similar comparison can be done to reduce the gene lists used in Cyclone and Seurat. Erik has not been able to test if reduced gene lists result in better prediction.
+Here Erik presents the matched genes in the predicted G2M phase for three different SVs mapping against cyclone (631 genes in G2M) and Seurat (52 genes in G2M). 40 Cyclone hits and 20 Seurat hits for sv2, 7 Cyclone hits and 1 Seurat hit for sv3, 40 Cyclone hits and 10 Seurat hits for sv5. Interesting note: 17 G2M genes are shared between Cyclone and Seurat for sv2, 1 G2M gene is shared between Cyclone and Seurat for sv3, 8 G2M genes are shared between Cyclone and Seurat for sv5. Similar comparison can be done to reduce the gene lists used in Cyclone and Seurat. Erik has not been able to test if reduced gene lists result in better prediction.
