@@ -4,18 +4,19 @@ author: "Donghyung Lee, modified by Erik Hedman"
 date: "`r Sys.Date()`"
 output:
   html_document: default
-  pdf_document: default
 ---
 
+**Clarification statement**. In this markdown script the parts Erik has added/modified are stated with his name. The original information is stated as "we". 
 
 Here, we illustrate how to use the iasva package to detect cell cycle stage
-difference within single cell RNA sequencing data. We use single cell RNA
+difference within single cell RNA sequencing data. Erik then extracted gene lists created with iasva and compared these lists with gene lists used in ([Cyclone](https://www.sciencedirect.com/science/article/pii/S1046202315300098)) and ([Seurat](https://www.nature.com/articles/nbt.4096)). Erik used single cell RNA
 sequencing (scRNA-Seq) data obtained from Mus musculus mESC samples
 ([Scialdone *et al.* 2015](https://www.ncbi.nlm.nih.gov/pubmed/25599176)).
 Other human glioblastoma samples can be found in a R data package ("iasvaExamples") containing data examples for IA-SVA (https://github.com/dleelab/iasvaExamples). 
 To install the package, follow the instruction provided in the GitHub page.
 
 ## Install packages
+
 ```{r install_packages, echo=TRUE, eval=FALSE}
 #devtools
 library(devtools)
@@ -26,6 +27,9 @@ devtools::install_github("dleelab/iasvaExamples")
 ```
 
 ## Load packages
+
+Probably, not all packages are needed. Erik has not looked into this.
+
 ```{r load_packages, echo=TRUE, message=FALSE}
 rm(list=ls())
 library(irlba) # partial SVD, the augmented implicitly restarted Lanczos bidiagonalization algorithm
@@ -55,9 +59,13 @@ normalize <- function(counts)
 ```
 
 ## Load the Buettner single cell RNA-Seq data
+
 From the Conquer database (http://imlspenticton.uzh.ch:3838/conquer/) the Buettner dataset was fetched:
 
 1	EMTAB2805 (PMID 25599176)	Buettner2015 Mus musculus	mESC in different cell cycle stages	288	SMARTer C1	full-length
+
+This code block was provided by our client Johan Reimegård.
+
 ```{r load_data, echo=TRUE}
 buettner.data <- readRDS("/Users/erikh/Desktop/git/scrna-cell-cycle/embryonic_data/EMTAB2805.rds")
 
@@ -80,8 +88,11 @@ dim(buet_exprs)
 ```
 
 ## Filter out clearly low quality cells from Buettner data
+
 Clearly some outlier cells on negative PC1 with low number of genes with pca using full dataset.
 Mainly S-phase cells, even if most S-phase cells have a high median expression.
+
+This code block was provided by our client Johan Reimegård.
 
 ```{r filter}
 # filter out cells with low nDet
@@ -97,6 +108,9 @@ dim(buet_exprs)
 ```
 
 ## Normalization for Buettner data
+
+This code block was provided by our client Johan Reimegård.
+
 ```{r normalization, fig.width=8, fig.height=6}
 ## count-depth relationship for all genes
 norm_buet <- SingleCellExperiment(assays=list(counts = buet_exprs, logcounts = log2(buet_exprs+1)))
@@ -104,11 +118,13 @@ dim(norm_buet)
 ```
 
 ## Calculate the number of detected genes 
+
 It is well known that the number of detected genes in each cell explains
 a very large portion of variability in scRNA-Seq data 
 ([Hicks et. al. 2015 BioRxiv](http://biorxiv.org/content/early/2015/08/25/025528),
 [McDavid et. al. 2016 Nature Biotechnology](http://www.nature.com/nbt/journal/v34/n6/full/nbt.3498.html)).
-Frequently, the first principal component of log-transformed scRNA-Seq read counts is highly correlated with the number of detected genes (e.g., r > 0.9). Here, we calculate the number of detected genes for Mus musculus mESC cells, which will be used as an known factor in the IA-SVA analyses. 
+Frequently, the first principal component of log-transformed scRNA-Seq read counts is highly correlated with the number of detected genes (e.g., r > 0.9). Here, Erik calculates the number of detected genes for Mus musculus mESC cells, which will be used as an known factor in the IA-SVA analyses. The code is not modified by Erik, only expression matrix differ from original script.
+
 ```{r num_detected_genes, echo=TRUE, fig.width=7, fig.height=4}
 Num_Detected_Genes_buet <- colSums(buet_exprs>0)
 Geo_Lib_buet <- colSums(log(buet_exprs+1))
@@ -122,8 +138,9 @@ cor(Geo_Lib_buet, pc1_buet)
 ```
 
 ## Run IA-SVA
-Here, we run IA-SVA using Geo_Lib_Size as a known factor and identify seven hidden factors. 
-SVs are plotted in a pairwise fashion to uncover which SVs can seperate cells. 
+
+Here, we run IA-SVA using Geo_Lib_Size as a known factor. Erik identifies seven hidden factors. SVs are plotted in a pairwise fashion to uncover which SVs can seperate cells. Lastly, the correlation plot of all SVs is plotted. 
+
 ```{r run_iasva, echo=TRUE, fig.width= 7, fig.height=6}
 set.seed(3445)
 mod_buet <- model.matrix(~Geo_Lib_buet)
@@ -214,7 +231,9 @@ corrplot(cor(iasva.sv_buet))
 ```
 
 ## Cell type assignment using scran R package
-Here cyclone is used to assign cell cycle phases. Vioplot visualizes how well the different SVs separate the cell cycle phases. 
+
+Here cyclone is used to assign cell cycle phases. The correlation plots explain how correlated each cell cycle phase is for each SV. It is one plot for G1, one for S, and one for G2M. Vioplot visualizes how well the different SVs separate the cell cycle phases all together. 
+
 ```{r run_scran, echo=TRUE, fig.width=6, fig.height=4}
 mmu.pairs <- readRDS(system.file("exdata", 
                                 "mouse_cycle_markers.rds", package="scran"))
@@ -252,76 +271,55 @@ vioplot(G1_buet_SV[,c(7)], S_buet_SV[,c(7)], G2M_buet_SV[,c(7)], names=c("G1", "
 title(xlab="Cell-cycle stage predictions", ylab="IA-SVA factor (SV7)")
 ```
 
-## KS-test on the three cell cycle phases and the different SVs
+## Kolmogorov–Smirnov test on the three cell cycle phases and the different SVs
+
 The SV with the lowest KS value will be used in next section. The other SVs are ignored. The SV with lowest value should be the one best separating the cell cycle phases using the vioplot in previous section. Code need to be optimized.
+
 ```{r }
 #KS-test between G1 and G2M
-ks_G1_G2M_1 <- ks.test(G1_buet_SV[,1],G2M_buet_SV[,1])
-ks_G1_G2M_2 <- ks.test(G1_buet_SV[,2],G2M_buet_SV[,2])
-ks_G1_G2M_3 <- ks.test(G1_buet_SV[,3],G2M_buet_SV[,3])
-ks_G1_G2M_4 <- ks.test(G1_buet_SV[,4],G2M_buet_SV[,4])
-ks_G1_G2M_5 <- ks.test(G1_buet_SV[,5],G2M_buet_SV[,5])
-ks_G1_G2M_6 <- ks.test(G1_buet_SV[,6],G2M_buet_SV[,6])
-ks_G1_G2M_7 <- ks.test(G1_buet_SV[,7],G2M_buet_SV[,7])
-#Put the p-value in a variable
-a1 <- as.numeric(unlist(ks_G1_G2M_1[2]))
-a2 <- as.numeric(unlist(ks_G1_G2M_2[2]))
-a3 <- as.numeric(unlist(ks_G1_G2M_3[2]))
-a4 <- as.numeric(unlist(ks_G1_G2M_4[2]))
-a5 <- as.numeric(unlist(ks_G1_G2M_5[2]))
-a6 <- as.numeric(unlist(ks_G1_G2M_6[2]))
-a7 <- as.numeric(unlist(ks_G1_G2M_7[2]))
+ks_G1_G2M_1 <- as.numeric(unlist(ks.test(G1_buet_SV[,1],G2M_buet_SV[,1])[2]))
+ks_G1_G2M_2 <- as.numeric(unlist(ks.test(G1_buet_SV[,2],G2M_buet_SV[,2])[2]))
+ks_G1_G2M_3 <- as.numeric(unlist(ks.test(G1_buet_SV[,3],G2M_buet_SV[,3])[2]))
+ks_G1_G2M_4 <- as.numeric(unlist(ks.test(G1_buet_SV[,4],G2M_buet_SV[,4])[2]))
+ks_G1_G2M_5 <- as.numeric(unlist(ks.test(G1_buet_SV[,5],G2M_buet_SV[,5])[2]))
+ks_G1_G2M_6 <- as.numeric(unlist(ks.test(G1_buet_SV[,6],G2M_buet_SV[,6])[2]))
+ks_G1_G2M_7 <- as.numeric(unlist(ks.test(G1_buet_SV[,7],G2M_buet_SV[,7])[2]))
 
 #KS-test between G1 and S
-ks_G1_S_1 <- ks.test(G1_buet_SV[,1],S_buet_SV[,1])
-ks_G1_S_2 <- ks.test(G1_buet_SV[,2],S_buet_SV[,2])
-ks_G1_S_3 <- ks.test(G1_buet_SV[,3],S_buet_SV[,3])
-ks_G1_S_4 <- ks.test(G1_buet_SV[,4],S_buet_SV[,4])
-ks_G1_S_5 <- ks.test(G1_buet_SV[,5],S_buet_SV[,5])
-ks_G1_S_6 <- ks.test(G1_buet_SV[,6],S_buet_SV[,6])
-ks_G1_S_7 <- ks.test(G1_buet_SV[,7],S_buet_SV[,7])
-#Put the p-value in a variable
-b1 <- as.numeric(unlist(ks_G1_S_1[2]))
-b2 <- as.numeric(unlist(ks_G1_S_2[2]))
-b3 <- as.numeric(unlist(ks_G1_S_3[2]))
-b4 <- as.numeric(unlist(ks_G1_S_4[2]))
-b5 <- as.numeric(unlist(ks_G1_S_5[2]))
-b6 <- as.numeric(unlist(ks_G1_S_6[2]))
-b7 <- as.numeric(unlist(ks_G1_S_7[2]))
+ks_G1_S_1 <- as.numeric(unlist(ks.test(G1_buet_SV[,1],S_buet_SV[,1])[2]))
+ks_G1_S_2 <- as.numeric(unlist(ks.test(G1_buet_SV[,2],S_buet_SV[,2])[2]))
+ks_G1_S_3 <- as.numeric(unlist(ks.test(G1_buet_SV[,3],S_buet_SV[,3])[2]))
+ks_G1_S_4 <- as.numeric(unlist(ks.test(G1_buet_SV[,4],S_buet_SV[,4])[2]))
+ks_G1_S_5 <- as.numeric(unlist(ks.test(G1_buet_SV[,5],S_buet_SV[,5])[2]))
+ks_G1_S_6 <- as.numeric(unlist(ks.test(G1_buet_SV[,6],S_buet_SV[,6])[2]))
+ks_G1_S_7 <- as.numeric(unlist(ks.test(G1_buet_SV[,7],S_buet_SV[,7])[2]))
 
 #KS-test between S and G2M
-ks_G2M_S_1 <- ks.test(G2M_buet_SV[,1],S_buet_SV[,1])
-ks_G2M_S_2 <- ks.test(G2M_buet_SV[,2],S_buet_SV[,2])
-ks_G2M_S_3 <- ks.test(G2M_buet_SV[,3],S_buet_SV[,3])
-ks_G2M_S_4 <- ks.test(G2M_buet_SV[,4],S_buet_SV[,4])
-ks_G2M_S_5 <- ks.test(G2M_buet_SV[,5],S_buet_SV[,5])
-ks_G2M_S_6 <- ks.test(G2M_buet_SV[,6],S_buet_SV[,6])
-ks_G2M_S_7 <- ks.test(G2M_buet_SV[,7],S_buet_SV[,7])
-#Put the p-value in a variable
-c1 <- as.numeric(unlist(ks_G2M_S_1[2]))
-c2 <- as.numeric(unlist(ks_G2M_S_2[2]))
-c3 <- as.numeric(unlist(ks_G2M_S_3[2]))
-c4 <- as.numeric(unlist(ks_G2M_S_4[2]))
-c5 <- as.numeric(unlist(ks_G2M_S_5[2]))
-c6 <- as.numeric(unlist(ks_G2M_S_6[2]))
-c7 <- as.numeric(unlist(ks_G2M_S_7[2]))
+ks_G2M_S_1 <- as.numeric(unlist(ks.test(G2M_buet_SV[,1],S_buet_SV[,1])[2]))
+ks_G2M_S_2 <- as.numeric(unlist(ks.test(G2M_buet_SV[,2],S_buet_SV[,2])[2]))
+ks_G2M_S_3 <- as.numeric(unlist(ks.test(G2M_buet_SV[,3],S_buet_SV[,3])[2]))
+ks_G2M_S_4 <- as.numeric(unlist(ks.test(G2M_buet_SV[,4],S_buet_SV[,4])[2]))
+ks_G2M_S_5 <- as.numeric(unlist(ks.test(G2M_buet_SV[,5],S_buet_SV[,5])[2]))
+ks_G2M_S_6 <- as.numeric(unlist(ks.test(G2M_buet_SV[,6],S_buet_SV[,6])[2]))
+ks_G2M_S_7 <- as.numeric(unlist(ks.test(G2M_buet_SV[,7],S_buet_SV[,7])[2]))
 
 #Multiply the different KS-tests for every SV to get a feeling of which SVs to exclude.
-ks_SV1 <- a1*b1*c1
-ks_SV2 <- a2*b2*c2
-ks_SV3 <- a3*b3*c3
-ks_SV4 <- a4*b4*c4
-ks_SV5 <- a5*b5*c5
-ks_SV6 <- a6*b6*c6
-ks_SV7 <- a7*b7*c7
+ks_SV1 <- ks_G1_G2M_1*ks_G1_S_1*ks_G2M_S_1
+ks_SV2 <- ks_G1_G2M_2*ks_G1_S_2*ks_G2M_S_2
+ks_SV3 <- ks_G1_G2M_3*ks_G1_S_3*ks_G2M_S_3
+ks_SV4 <- ks_G1_G2M_4*ks_G1_S_4*ks_G2M_S_4
+ks_SV5 <- ks_G1_G2M_5*ks_G1_S_5*ks_G2M_S_5
+ks_SV6 <- ks_G1_G2M_6*ks_G1_S_6*ks_G2M_S_6
+ks_SV7 <- ks_G1_G2M_7*ks_G1_S_7*ks_G2M_S_7
 ks_vec <- data.frame(ks_SV1, ks_SV2, ks_SV3, ks_SV4, ks_SV5, ks_SV6, ks_SV7)
 ks_vec
 ```
 
 ## Find marker genes for the detected heterogeneity (SV2).
-Here, using the find_markers() function we find marker genes that are significantly
-associated with SV2, since this had the lowest KS-value (multiple testing adjusted p-value < 0.05,
-default significance cutoff, and R-squared value > 0.3).
+
+Here, we use the find_markers() function. Erik finds marker genes that are significantly
+associated with SV2, since this had the lowest KS-value. Default significance cutoff, and R-squared value > 0.3).
+
 ```{r find_markers_SV2, echo=TRUE, fig.width=6, fig.height=16}
 # try different R2 thresholds
 pdf(paste0("/Users/erikh/Desktop/git/scrna-cell-cycle/r_scripts/erik/ia_sva/sc_output/Clustering_analyses_figure3_sv2_buet.pdf"))
@@ -344,6 +342,8 @@ names(cluster.col_buet) <- as.vector(levels(Cluster_buet_2))
 anno.colors_buet <- list(Cluster=cluster.col_buet)
 anno.colors_buet
 
+#heatmaps are excluded from the printed result due to irrelevance for this project.
+
 #pheatmap(log(marker.counts.SV2_buet+1), show_colnames =FALSE, 
 #         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
 #         annotation_colors = anno.colors_buet)
@@ -362,7 +362,10 @@ write.table(gene.list.long_buet_SV2, file = paste0("/Users/erikh/Desktop/git/scr
 
 ```
 
-SV3
+## SV3
+
+As a proof of concept SV3 is used to show the results with an SV with higher KS value.
+
 ```{r find_markers_SV3, echo=TRUE, fig.width=6, fig.height=16}
 marker.counts.SV3_buet <- find_markers(summ_exp_buet, 
                             as.matrix(iasva.sv_buet[,c(3)]), rsq.cutoff = 0.35)
@@ -379,6 +382,8 @@ cluster.col_buet <- color.vec[1:2]
 names(cluster.col_buet) <- as.vector(levels(Cluster_buet_3))
 anno.colors_buet <- list(Cluster=cluster.col_buet)
 anno.colors_buet
+
+#heatmaps are excluded from the printed result due to irrelevance for this project.
 
 #pheatmap(log(marker.counts.SV3_buet+1), show_colnames =FALSE, 
 #         clustering_method = "ward.D2", cutree_cols = 2, annotation_col = anno.col2_buet,
@@ -398,7 +403,10 @@ write.table(gene.list.long_buet_SV3, file = paste0("/Users/erikh/Desktop/git/scr
 
 ```
 
-SV5
+## SV5
+
+The SV with the second lowest KS value is tested to compare results with SV2.
+
 ```{r find_markers_SV5, echo=TRUE, fig.width=6, fig.height=16}
 marker.counts.SV5_buet <- find_markers(summ_exp_buet, 
                             as.matrix(iasva.sv_buet[,c(5)]), rsq.cutoff = 0.35)
@@ -434,7 +442,10 @@ write.table(gene.list.long_buet_SV5, file = paste0("/Users/erikh/Desktop/git/scr
 
 ```
 
-## Adding of Seurat gene list for comparison
+## Adding the Seurat gene list for comparison
+
+This code block was provided by our client Johan Reimegård.
+
 ```{r convert_names}
 savefile = "seurat_cc_genes_mouse.Rdata"
 if (file.exists(savefile)){
@@ -464,7 +475,9 @@ save(cc.genes.mouse, file=savefile)
 ```
 
 ## A comparison between the gene lists from Cyclone and Seurat with the different SVs
-Match the gene list used in mmu.pairs for Cyclone (G1=12052 paired genes, S=6459 paired genes, G2M=9981 paired genes) and Seurat (S=40 and G2M=52) with the long gene lists from different SVs.
+
+Match the gene list used in mmu.pairs for Cyclone (G1=12052 paired genes, S=6459 paired genes, G2M=9981 paired genes) and Seurat (S=40 and G2M=52) with the long gene lists from different SVs. Erik unlisted the paired gene lists from Cyclone, and made them unique. This resulted in three gene lists of G1=622, S=631, and G2M=641. 
+
 ```{r}
 #unlists the mmu.pairs and create unique lists of genes for G1, S and G2M
 mmu_vec_an_G1 <- unique(unlist(mmu.pairs["G1"]))
@@ -474,7 +487,7 @@ mmu_vec_an_G2M <- unique(unlist(mmu.pairs["G2M"]))
 seurat_vec_an_S <- unique(unlist(cc.genes.mouse["s.genes"]))
 seurat_vec_an_G2M <- unique(unlist(cc.genes.mouse["g2m.genes"]))
 
-#Matching the lists using intersect()
+#Matching the gene lists using intersect()
 #sv2: ks value 7.816618e-45
 #cyclone
 ccg1_match_sv2 <- sort(intersect(mmu_vec_an_G1, gene.list.long_buet_SV2))
@@ -502,6 +515,10 @@ ccg2m_match_sv5 <- sort(intersect(mmu_vec_an_G2M, gene.list.long_buet_SV5))
 seus_match_sv5 <- sort(intersect(seurat_vec_an_S, gene.list.long_buet_SV5))
 seug2m_match_sv5 <- sort(intersect(seurat_vec_an_G2M, gene.list.long_buet_SV5))
 
+#tables the number of matched genes between the different gene lists and SVs
+res_gene_match <- data.frame(g1_cyclone_SV2=length(ccg1_match_sv2), s_cyclone_SV2=length(ccs_match_sv2), g2m_cyclone_SV2=length(ccg2m_match_sv2), g1_cyclone_SV3=length(ccg1_match_sv3), s_cyclone_SV3=length(ccs_match_sv3), g2m_cyclone_SV3=length(ccg2m_match_sv3), g1_cyclone_SV5=length(ccg1_match_sv5), s_cyclone_SV5=length(ccs_match_sv5), g2m_cyclone_SV5=length(ccg2m_match_sv5), s_seurat_SV2=length(seus_match_sv2), g2m_seurat_SV2=length(seug2m_match_sv2), s_seurat_SV3=length(seus_match_sv3), g2m_seurat_SV3=length(seug2m_match_sv3), s_seurat_SV5=length(seus_match_sv5), g2m_seurat_SV5=length(seug2m_match_sv5)) 
+table(res_gene_match)
+
 #lists the matched G2M genes from cyclone and seurat for sv2, sv3, and sv5
 list(ccg2m_match_sv2)
 list(seug2m_match_sv2)
@@ -511,4 +528,4 @@ list(ccg2m_match_sv5)
 list(seug2m_match_sv5)
 
 ```
-Here we get the matched genes in the predicted G2M phase for three different SVs mapping against cyclone (631 genes in G2M) and Seurat (52 genes in G2M). 40 Cyclone hits and 20 Seurat hits for sv2, 7 Cyclone hits and 1 Seurat hit for sv3, 40 Cyclone hits and 10 Seurat hits for sv5. Interesting note: 17 genes are shared between Cyclone and Seurat for sv2, 1 gene is shared between Cyclone and Seurat for sv3, 8 genes are shared between Cyclone and Seurat for sv5.
+Here Erik presentss the matched genes in the predicted G2M phase for three different SVs mapping against cyclone (631 genes in G2M) and Seurat (52 genes in G2M). 40 Cyclone hits and 20 Seurat hits for sv2, 7 Cyclone hits and 1 Seurat hit for sv3, 40 Cyclone hits and 10 Seurat hits for sv5. Interesting note: 17 G2M genes are shared between Cyclone and Seurat for sv2, 1 G2M gene is shared between Cyclone and Seurat for sv3, 8 G2M genes are shared between Cyclone and Seurat for sv5. Similar comparison can be done to reduce the gene lists used in Cyclone and Seurat. Erik has not been able to test if reduced gene lists result in better prediction.
