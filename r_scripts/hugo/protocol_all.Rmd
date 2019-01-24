@@ -198,7 +198,7 @@ print(cycle_start_bu)
 
 # find best region for assessing each phase
 source("reCAT_master/R/get_rdata.R")
-rdata_bu <- get_rdata(score_result_bu, ordIndex_bu, cycle_start_bu)
+rdata_bu <- get_rdata(score_result_bu, ordIndex_bu)
 print(rdata_bu)
 
 # obtain the real time cycle
@@ -385,7 +385,7 @@ print(cycle_start_le)
 
 # find best region for assessing each phase
 source("reCAT_master/R/get_rdata.R")
-rdata_le <- get_rdata(score_result_le, ordIndex_le, cycle_start_le)
+rdata_le <- get_rdata(score_result_le, ordIndex_le)
 print(rdata_le)
 
 # obtain the real time cycle
@@ -542,7 +542,7 @@ print(cycle_start)
 
 # find best region for assessing each phase
 source("reCAT_master/R/get_rdata.R")
-rdata <- get_rdata(score_result, ordIndex, cycle_start)
+rdata <- get_rdata(score_result, ordIndex)
 print(rdata)
 
 # obtain the real time cycle
