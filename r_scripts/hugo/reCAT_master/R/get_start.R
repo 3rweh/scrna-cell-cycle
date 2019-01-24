@@ -30,7 +30,7 @@ get_start <- function(score_result, ordIndex)
   get_start_p <- function(g1_score, s_score, g2m_score)
   {
     # Used in case of a shorter time-series
-    if (50 >= length(ordIndex)){
+    if (100 >= length(ordIndex)){
       # Walks through the min-region, checking if the s-score is larger then that of the g1_score. We know that when the g1_score passes that of the s-score, we have reached the start of the cycle
       for ( i in 1:(length(g1_score)-8)){
         
@@ -99,7 +99,7 @@ get_start <- function(score_result, ordIndex)
         g2m_vec <- append(g2m_vec, g2m_num) 
       }
     
-      # Walks through the min-region, checking if the s-score is larger then that of the g1_score. We know that when the g1_score passes that of the s-score, we have reached the start of the cycle
+      # Walks through the min-region, checking if the s-score or g2m-score is larger then that of the g1_score. We know that when the g1_score passes that of the s-score, we have reached the start of the cycle
       for ( i in 1:(length(g1_vec)-10)){
         
         g1_p_s <- g1_vec[i]
