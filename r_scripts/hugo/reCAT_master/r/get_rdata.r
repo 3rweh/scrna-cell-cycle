@@ -1,3 +1,5 @@
+# Made by: Hugo Swenson, 2019-01-25
+
 get_rdata <- function(score_result, ordIndex)
 {	
 	# Loads the score results as a separate variable, uses bayes score due to better G2M separation

@@ -1,5 +1,7 @@
 get_start <- function(score_result, ordIndex)
 {	
+  # Made by: Hugo Swenson, 2019-01-25
+  
   # Loads the score results as a separate variable, uses bayes score due to better G2M separation
   # Arranges these scores with respect to the ordIndex
   bayes_cell <- score_result$bayes_score[ordIndex, ]
